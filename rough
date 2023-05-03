@@ -1,0 +1,79 @@
+let world: Vec<Box<dyn Hitable>> = vec![
+        Box::new(Sphere::new(
+            Point3::new(0.0, 0.0, -1.0),
+            0.5,
+            Rc::new(Lambertian::new(Vector3::new(0.8, 0.3, 0.3))),
+        )),
+        Box::new(Sphere::new(
+            Point3::new(1.0, 0.0, -1.0),
+            0.5,
+            Rc::new(Metal::new(Vector3::new(0.8, 0.6, 0.2), 0.3)),
+        )),
+        Box::new(Sphere::new(
+            Point3::new(-1.0, 0.0, -1.0),
+            0.5,
+            Rc::new(Dielectric::new(1.5)), // Glass-like dielectric material with a refractive index of 1.5
+        )),
+        Box::new(Sphere::new(
+            Point3::new(0.0, -100.5, -1.0),
+            100.0,
+            Rc::new(Lambertian::new(Vector3::new(0.8, 0.8, 0.0))),
+        )),
+    ];
+
+    let mut image_data = Vec::<u8>::new();
+        
+            // Render loop
+            for j in (0..image_height).rev() {
+                for i in 0..image_width {
+                    let mut pixel_color = Vector3::new(0.0, 0.0, 0.0);
+                    for _ in 0..samples_per_pixel {
+                        let u = (i as f64 + random_f64()) / (image_width - 1) as f64;
+                        let v = (j as f64 + random_f64()) / (image_height - 1) as f64;
+                        let ray = camera.get_ray(u, v);
+                        pixel_color += ray_color(&ray, &world, max_depth);
+                    }
+        
+                    // Apply gamma correction and write the pixel color
+                    let scale = 1.0 / samples_per_pixel as f64;
+                    let r = (pixel_color.x * scale).sqrt();
+                    let g = (pixel_color.y * scale).sqrt();
+                    let b = (pixel_color.z * scale).sqrt();
+        
+                    let ir = (255.99 * r.clamp(0.0, 0.999)) as u8;
+                    let ig = (255.99 * g.clamp(0.0, 0.999)) as u8;
+                    let ib = (255.99 * b.clamp(0.0, 0.999)) as u8;
+        
+                    image_data.push(ir);
+                    image_data.push(ig);
+                    image_data.push(ib);
+                }
+            }
+        
+            let mut file = File::create("outputx.ppm").unwrap();
+            file.write_all(format!("P6\n{} {}\n255\n", image_width, image_height).as_bytes())
+                .unwrap();
+            file.write_all(&image_data).unwrap();
+        }
+
+        fn scatter(&self, ray_in: &Ray, hit_record: &HitRecord) -> Option<(Vector3<f64>, Ray)> {
+            let reflected = reflect(ray_in.direction.normalize(), hit_record.normal);
+            let scattered = Ray::new(hit_record.p, reflected + self.fuzz * random_in_unit_sphere());
+            if scattered.direction.dot(&hit_record.normal) > 0.0 {
+                let light_dir = Unit::new_normalize(Vector3::new(1.0, 1.0, 1.0)); // example light direction
+                let color = self.blinn_phong(ray_in, hit_record, &light_dir);
+                Some((color, scattered))
+            } else {
+                None
+            }
+        }
+        fn blinn_phong(&self, ray_in: &Ray, hit_record: &HitRecord, light_dir: &Unit<Vector3<f64>>) -> Vector3<f64> {
+            let view_dir = -ray_in.direction.normalize();
+            let halfway_dir = (light_dir.as_ref() + view_dir).normalize();
+    
+            let ambient = self.albedo * 0.1;
+            let diffuse = self.albedo * hit_record.normal.dot(light_dir.as_ref()).max(0.0);
+            let specular = Vector3::new(1.0, 1.0, 1.0) * hit_record.normal.dot(&halfway_dir).max(0.0).powf(100.0);
+    
+            ambient + diffuse + specular
+        }
