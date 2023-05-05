@@ -2,28 +2,25 @@ use nalgebra::{Point3, Vector3};
 use std::hash::{Hash, Hasher};
 
 
+#[derive(Clone)]
 pub struct Ray {
-    pub origin: Point3<f64>,
-    pub direction: Vector3<f64>,
+    pub origin: Point3<f32>,
+    pub direction: Vector3<f32>,
 }
 
 impl Ray {
-    pub fn new(origin: Point3<f64>, direction: Vector3<f64>) -> Self {
+    pub fn new(origin: Point3<f32>, direction: Vector3<f32>) -> Self {
         Ray { origin, direction }
     }
 
-    pub fn point_at_parameter(&self, t: f64) -> Point3<f64> {
-        self.origin + self.direction * t
-    }
-}
-impl PartialEq for Ray {
-    fn eq(&self, other: &Self) -> bool {
-        self.origin == other.origin && self.direction == other.direction
+    pub fn point_at_parameter(&self, t: f32) -> Point3<f32> {
+        return self.origin + (self.direction * t)
     }
 }
 
 
 
-impl Eq for Ray {}
+
+
 
 

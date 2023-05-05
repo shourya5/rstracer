@@ -29,7 +29,7 @@ use metal::Metal;
 use nalgebra::{Point3, Vector3, distance_squared, distance};
 // use rand::Rng;
 use sphere::Sphere;
-use util::{random_f64, ray_color, ray_color_dup};
+use util::{random_f32, ray_color, ray_color_dup};
 use std::collections::HashMap;
 use std::fs::File;
 use std::sync::{Arc, Mutex};
@@ -57,7 +57,7 @@ use rayon::prelude::*;
     //         // Image
     //         let aspect_ratio = 16.0 / 9.0;
     //         let image_width = 400;
-    //         let image_height = (image_width as f64 / aspect_ratio) as u32;
+    //         let image_height = (image_width as f32 / aspect_ratio) as u32;
     //         let samples_per_pixel = 150;
     //         let max_depth = 60;
         
@@ -87,14 +87,14 @@ use rayon::prelude::*;
     //             for i in 0..image_width {
     //                 let mut pixel_color = Vector3::new(0.0, 0.0, 0.0);
     //                 for _ in 0..samples_per_pixel {
-    //                     let u = (i as f64 + random_f64()) / (image_width - 1) as f64;
-    //                     let v = (j as f64 + random_f64()) / (image_height - 1) as f64;
+    //                     let u = (i as f32 + random_f32()) / (image_width - 1) as f32;
+    //                     let v = (j as f32 + random_f32()) / (image_height - 1) as f32;
     //                     let ray = camera.get_ray(u, v);
     //                     pixel_color += ray_color(&ray, &world, max_depth);
     //                 }
 
     //             // Apply gamma correction and write the pixel color
-    //             let scale = 1.0 / samples_per_pixel as f64;
+    //             let scale = 1.0 / samples_per_pixel as f32;
     //             let r = (pixel_color.x * scale).sqrt();
     //             let g = (pixel_color.y * scale).sqrt();
     //             let b = (pixel_color.z * scale).sqrt();
@@ -123,11 +123,15 @@ use rayon::prelude::*;
         let aspect_ratio = 16.0 / 9.0;
         let image_width = 400;
         let image_height = (image_width as f64 / aspect_ratio) as u32;
-        let samples_per_pixel = 200;
-        let max_depth: u32 = 5;
+        let samples_per_pixel = 50;
+        let max_depth: u32 = 25;
     
         // World
         let world = random_scene();
+        let scene_bounding_box = world.bounding_box.unwrap();
+        let diagonal_length = (scene_bounding_box.max - scene_bounding_box.min).norm();
+        let t_max = diagonal_length;
+        //dbg!(t_max);
     
         // Camera
         let lookfrom = Point3::new(12.0, 6.0, 12.0);
@@ -141,7 +145,7 @@ use rayon::prelude::*;
             lookat,
             vup,
             20.0,
-            aspect_ratio,
+            aspect_ratio as f32,
             aperture,
             dist_to_focus,
         );
@@ -152,14 +156,14 @@ use rayon::prelude::*;
         //     for i in 0..image_width {
         //         let mut pixel_color = Vector3::new(0.0, 0.0, 0.0);
         //         for _ in 0..samples_per_pixel {
-        //             let u = (i as f64 + random_f64()) / (image_width - 1) as f64;
-        //             let v = (j as f64 + random_f64()) / (image_height - 1) as f64;
+        //             let u = (i as f32 + random_f32()) / (image_width - 1) as f32;
+        //             let v = (j as f32 + random_f32()) / (image_height - 1) as f32;
         //             let ray = camera.get_ray(u, v);
         //             pixel_color += ray_color(&ray, &world, max_depth);
         //         }
         //         //println!("{}", pixel_color);
         //         // Apply gamma correction and write the pixel color
-        //         let scale = 1.0 / samples_per_pixel as f64;
+        //         let scale = 1.0 / samples_per_pixel as f32;
         //         let r = (pixel_color.x * scale).sqrt();
         //         let g = (pixel_color.y * scale).sqrt();
         //         let b = (pixel_color.z * scale).sqrt();
@@ -187,14 +191,14 @@ let data: Vec<(u32, u32, Rgb<u8>)> = (0..image_height)
                 let mut pixel_color = Vector3::new(0.0, 0.0, 0.0);
                 
                 for _ in 0..samples_per_pixel {
-                    let u = (i as f64 + random_f64()) / (image_width - 1) as f64;
-                    let v = (j as f64 + random_f64()) / (image_height - 1) as f64;
+                    let u = (i as f32 + random_f32()) / (image_width - 1) as f32;
+                    let v = (j as f32 + random_f32()) / (image_height - 1) as f32;
                     let ray = camera.get_ray(u, v);
                     //println!("here camera");
-                    pixel_color += ray_color_dup(&ray, &world, max_depth);
+                    pixel_color += ray_color_dup(&ray, &world, max_depth,t_max);
                 }
 
-                let scale = 1.0 / samples_per_pixel as f64;
+                let scale = 1.0 / samples_per_pixel as f32;
                 let r = (pixel_color.x * scale).sqrt();
                 let g = (pixel_color.y * scale).sqrt();
                 let b = (pixel_color.z * scale).sqrt();
@@ -219,14 +223,14 @@ let data: Vec<(u32, u32, Rgb<u8>)> = (0..image_height)
 //                 let mut pixel_color = Vector3::new(0.0, 0.0, 0.0);
                 
 //                 for _ in 0..samples_per_pixel {
-//                     let u = (i as f64 + random_f64()) / (image_width - 1) as f64;
-//                     let v = (j as f64 + random_f64()) / (image_height - 1) as f64;
+//                     let u = (i as f32 + random_f32()) / (image_width - 1) as f32;
+//                     let v = (j as f32 + random_f32()) / (image_height - 1) as f32;
 //                     let ray = camera.get_ray(u, v);
 //                     pixel_color += ray_color_dup(&ray, &world, max_depth);
 //                 }
 
 
-//                 let scale = 1.0 / samples_per_pixel as f64;
+//                 let scale = 1.0 / samples_per_pixel as f32;
 //                 let r = (pixel_color.x * scale).sqrt();
 //                 let g = (pixel_color.y * scale).sqrt();
 //                 let b = (pixel_color.z * scale).sqrt();
@@ -262,7 +266,7 @@ let data: Vec<(u32, u32, Rgb<u8>)> = (0..image_height)
 // Helper function to refract a vector
 
 
-fn random_vector3(min: f64, max: f64) -> Vector3<f64> {
+fn random_vector3(min: f32, max: f32) -> Vector3<f32> {
     let mut rng = rand::thread_rng();
     Vector3::new(
         rng.gen_range(min..max),
@@ -284,11 +288,11 @@ fn random_vector3(min: f64, max: f64) -> Vector3<f64> {
 //     //Random small spheres
 //     for a in -11..11 {
 //         for b in -11..11 {
-//             let choose_mat: f64 = rng.gen_range(0.0..1.0);
+//             let choose_mat: f32 = rng.gen_range(0.0..1.0);
 //             let center = Point3::new(
-//                 a as f64 + 0.9 * rng.gen_range(0.0..1.0),
+//                 a as f32 + 0.9 * rng.gen_range(0.0..1.0),
 //                 0.2,
-//                 b as f64 + 0.9 * rng.gen_range(0.0..1.0),
+//                 b as f32 + 0.9 * rng.gen_range(0.0..1.0),
 //             );
 
 //             if (center - Point3::new(4.0, 0.2, 0.0)).magnitude() > 0.9 {
@@ -359,11 +363,11 @@ fn random_scene() -> KdNode {
     //Random small spheres
     for a in -11..11 {
         for b in -11..11 {
-            let choose_mat: f64 = rng.gen_range(0.0..1.0);
+            let choose_mat: f32 = rng.gen_range(0.0..1.0);
             let center = Point3::new(
-                a as f64 + 0.9 * rng.gen_range(0.0..1.0),
+                a as f32 + 0.9 * rng.gen_range(0.0..1.0),
                 0.2,
-                b as f64 + 0.9 * rng.gen_range(0.0..1.0),
+                b as f32 + 0.9 * rng.gen_range(0.0..1.0),
             );
 
             if (center - Point3::new(4.0, 0.2, 0.0)).magnitude() > 0.9 {
@@ -419,8 +423,8 @@ fn random_scene() -> KdNode {
     Arc::new(Metal::new(Vector3::new(0.7, 0.6, 0.5), 0.0)),
 )));
 
-// let time0: f64 = 0.0; 
-// let time1: f64 = 1.0;
+// let time0: f32 = 0.0; 
+// let time1: f32 = 1.0;
 
 //  let kdtree =  KdTree::new(&mut  world, time0, time1);
 // let t0 = 0.0;

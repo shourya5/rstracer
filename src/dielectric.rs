@@ -6,11 +6,11 @@ use crate::{material::Material, ray::Ray, hitrecord::HitRecord, util::{reflect, 
 
 
 pub struct Dielectric {
-    pub ref_idx: f64,
+    pub ref_idx: f32,
 }
 
 impl Dielectric {
-    pub fn new(ref_idx: f64) -> Self {
+    pub fn new(ref_idx: f32) -> Self {
         Dielectric { ref_idx }
     }
     
@@ -18,7 +18,7 @@ impl Dielectric {
     
 }
 impl Material for Dielectric {
-    fn scatter(&self, ray_in: &Ray, hit_record: &HitRecord) -> Option<(Vector3<f64>, Ray)> {
+    fn scatter(&self, ray_in: &Ray, hit_record: &HitRecord) -> Option<(Vector3<f32>, Ray)> {
         let reflected = reflect(ray_in.direction, hit_record.normal);
         let view_direction = -ray_in.direction.normalize();
         let light_direction = Vector3::new(1.0, 1.0, 1.0).normalize();
@@ -41,7 +41,7 @@ impl Material for Dielectric {
 
         let scattered = if let Some(refracted) = refract(ray_in.direction, outward_normal, ni_over_nt) {
             let reflect_prob = schlick(cosine, self.ref_idx);
-            if rand::thread_rng().gen::<f64>() < reflect_prob {
+            if rand::thread_rng().gen::<f32>() < reflect_prob {
                 Ray::new(hit_record.p, reflected)
             } else {
                 Ray::new(hit_record.p, refracted)

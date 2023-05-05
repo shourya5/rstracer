@@ -7,14 +7,14 @@ use nalgebra::Point3;
 use crate::material::Material;
 
 pub struct Cylinder {
-    base_center: Point3<f64>,
-    height: f64,
-    radius: f64,
+    base_center: Point3<f32>,
+    height: f32,
+    radius: f32,
     material: Arc<dyn Material>,
 }
 
 impl Cylinder {
-    pub fn new(base_center: Point3<f64>, height: f64, radius: f64, material: Arc<dyn Material>) -> Self {
+    pub fn new(base_center: Point3<f32>, height: f32, radius: f32, material: Arc<dyn Material>) -> Self {
         Cylinder {
             base_center,
             height,
@@ -23,14 +23,14 @@ impl Cylinder {
         }
     }
 
-    fn is_point_inside_cylinder(&self, point: &Point3<f64>) -> bool {
+    fn is_point_inside_cylinder(&self, point: &Point3<f32>) -> bool {
         let dist_sq = (point.x - self.base_center.x).powi(2) + (point.z - self.base_center.z).powi(2);
         dist_sq < self.radius.powi(2) && point.y >= self.base_center.y && point.y <= self.base_center.y + self.height
     }
 }
 
 impl Hitable for Cylinder {
-    fn hit(&self, ray: &Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
+    fn hit(&self, ray: &Ray, t_min: f32, t_max: f32) -> Option<HitRecord> {
         let base_to_origin = ray.origin - self.base_center;
         let a = ray.direction.x.powi(2) + ray.direction.z.powi(2);
         let b = 2.0 * (base_to_origin.x * ray.direction.x + base_to_origin.z * ray.direction.z);
@@ -59,7 +59,7 @@ impl Hitable for Cylinder {
         None
     }
 
-    fn bounding_box(&self, _t0: f64, _t1: f64) -> Option<AABB> {
+    fn bounding_box(&self, _t0: f32, _t1: f32) -> Option<AABB> {
         let min = Point3::new(
             self.base_center.x - self.radius,
             self.base_center.y,

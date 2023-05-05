@@ -5,20 +5,23 @@ use crate::{ray::Ray, hitrecord::Hitable};
 
 #[derive(Copy, Clone)]
 pub struct AABB {
-    pub min: Point3<f64>,
-    pub max: Point3<f64>,
+    pub min: Point3<f32>,
+    pub max: Point3<f32>,
 }
 
 impl AABB {
-    pub fn new(min: Point3<f64>, max: Point3<f64>) -> Self {
+    pub fn new(min: Point3<f32>, max: Point3<f32>) -> Self {
         AABB { min, max }
     }
-    pub fn centroid(&self) -> Point3<f64> {
+    pub fn centroid(&self) -> Point3<f32> {
         let centroid_vector = (self.min.coords + self.max.coords) / 2.0;
         Point3::from(centroid_vector)
     }
+    pub fn union(&self, other: &AABB) -> AABB {
+        surrounding_box(self, other)
+    }
 
-    pub fn hit(&self, ray: &Ray, t_min: f64, t_max: f64) -> bool {
+    pub fn hit(&self, ray: &Ray, t_min: f32, t_max: f32) -> bool {
         for a in 0..3 {
             let inv_d = 1.0 / ray.direction[a];
             let mut t0 = (self.min[a] - ray.origin[a]) * inv_d;
@@ -63,7 +66,7 @@ impl AABB {
             2
         }
     }
-    pub fn surface_area(&self) -> f64 {
+    pub fn surface_area(&self) -> f32 {
         let diff = self.max - self.min;
         2.0 * (diff.x * diff.y + diff.x * diff.z + diff.y * diff.z)
     }

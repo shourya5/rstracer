@@ -16,8 +16,8 @@ pub struct BVHNode {
 }
 
 impl BVHNode {
-    pub fn new(mut objects: Vec<Arc<dyn Hitable>>, time0: f64, time1: f64) -> Arc<Self> {
-        let axis = (3.0 * rand::random::<f64>()).floor() as usize;
+    pub fn new(mut objects: Vec<Arc<dyn Hitable>>, time0: f32, time1: f32) -> Arc<Self> {
+        let axis = (3.0 * rand::random::<f32>()).floor() as usize;
 
         objects.sort_unstable_by(|a, b| {
             let a_box = a.bounding_box(time0, time1).unwrap();
@@ -53,7 +53,7 @@ impl BVHNode {
 
         Arc::new(BVHNode { left, right, aabb })
     }
-    // pub fn from_objects(objects: &mut [Arc<dyn Hitable>], time0: f64, time1: f64) -> Arc<Self> {
+    // pub fn from_objects(objects: &mut [Arc<dyn Hitable>], time0: f32, time1: f32) -> Arc<Self> {
     //     let axis = rand::thread_rng().gen_range(0..3);
     //     let object_span = objects.len();
 
@@ -94,7 +94,7 @@ impl BVHNode {
 
     //     Arc::new(BVHNode { left, right, aabb })
     // }
-    pub fn from_objects(mut objects: Vec<Arc<dyn Hitable>>, time0: f64, time1: f64) -> Arc<Self> {
+    pub fn from_objects(mut objects: Vec<Arc<dyn Hitable>>, time0: f32, time1: f32) -> Arc<Self> {
         let axis = rand::thread_rng().gen_range(0..3);
 
         objects.sort_unstable_by(|a, b| {
@@ -130,7 +130,7 @@ impl BVHNode {
 
 
 impl Hitable for BVHNode {
-    fn hit(&self, ray: &Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
+    fn hit(&self, ray: &Ray, t_min: f32, t_max: f32) -> Option<HitRecord> {
         if !self.aabb.hit(ray, t_min, t_max) {
             return None;
         }
@@ -155,13 +155,13 @@ impl Hitable for BVHNode {
         }
     }
 
-    fn bounding_box(&self, _t0: f64, _t1: f64) -> Option<AABB> {
+    fn bounding_box(&self, _t0: f32, _t1: f32) -> Option<AABB> {
         Some(self.aabb)
     }
     
    
 }
-fn box_compare(a: &Arc<dyn Hitable>, b: &Arc<dyn Hitable>, axis: usize, time0: f64, time1: f64) -> bool {
+fn box_compare(a: &Arc<dyn Hitable>, b: &Arc<dyn Hitable>, axis: usize, time0: f32, time1: f32) -> bool {
     let a_box = a.bounding_box(time0, time1).unwrap();
     let b_box = b.bounding_box(time0, time1).unwrap();
     a_box.min[axis] < b_box.min[axis]

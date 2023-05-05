@@ -6,14 +6,14 @@ use nalgebra::{Point3, Vector3};
 use crate::material::Material;
 
 pub struct Cone {
-    apex: Point3<f64>,
-    height: f64,
-    radius: f64,
+    apex: Point3<f32>,
+    height: f32,
+    radius: f32,
     material: Arc<dyn Material>,
 }
 
 impl Cone {
-    pub fn new(apex: Point3<f64>, height: f64, radius: f64, material: Arc<dyn Material>) -> Self {
+    pub fn new(apex: Point3<f32>, height: f32, radius: f32, material: Arc<dyn Material>) -> Self {
         Cone {
             apex,
             height,
@@ -22,7 +22,7 @@ impl Cone {
         }
     }
 
-    fn is_point_inside_cone(&self, point: &Point3<f64>) -> bool {
+    fn is_point_inside_cone(&self, point: &Point3<f32>) -> bool {
         let dist_sq = (point.x - self.apex.x).powi(2) + (point.z - self.apex.z).powi(2);
         let y_diff = point.y - self.apex.y;
         if y_diff >= 0.0 && y_diff <= self.height {
@@ -35,7 +35,7 @@ impl Cone {
 }
 
 impl Hitable for Cone {
-    fn hit(&self, ray: &Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
+    fn hit(&self, ray: &Ray, t_min: f32, t_max: f32) -> Option<HitRecord> {
         let k = self.radius / self.height;
         let k_sq = k * k;
         let apex_to_origin = ray.origin - self.apex;
@@ -67,7 +67,7 @@ impl Hitable for Cone {
         None
     }
 
-    fn bounding_box(&self, _t0: f64, _t1: f64) -> Option<AABB> {
+    fn bounding_box(&self, _t0: f32, _t1: f32) -> Option<AABB> {
         let min = Point3::new(
             self.apex.x - self.radius,
             self.apex.y,

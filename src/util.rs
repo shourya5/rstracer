@@ -2,6 +2,7 @@ use std::{sync::{Arc, Mutex}, collections::HashMap};
 
 use nalgebra::{Vector3, Point3};
 use rand::Rng;
+use rayon::prelude::ParallelIterator;
 
 
 
@@ -9,7 +10,7 @@ use rand::Rng;
 
 use crate::{ray::Ray, hitrecord::{Hitable, HitRecord}, light::{Light, self}, aabb::AABB, bvhnode::BVHNode, kdnode::KdNode};
 
-pub fn refract(v: Vector3<f64>, n: Vector3<f64>, ni_over_nt: f64) -> Option<Vector3<f64>> {
+pub fn refract(v: Vector3<f32>, n: Vector3<f32>, ni_over_nt: f32) -> Option<Vector3<f32>> {
     let uv = v.normalize();
     let dt = uv.dot(&n);
     let discriminant = 1.0 - ni_over_nt * ni_over_nt * (1.0 - dt * dt);
@@ -21,12 +22,12 @@ pub fn refract(v: Vector3<f64>, n: Vector3<f64>, ni_over_nt: f64) -> Option<Vect
     }
 }
 #[inline(always)]
-pub fn reflect(v: Vector3<f64>, n: Vector3<f64>) -> Vector3<f64> {
+pub fn reflect(v: Vector3<f32>, n: Vector3<f32>) -> Vector3<f32> {
     v - 2.0 * v.dot(&n) * n
 }
 // Helper function to calculate Schlick's approximation
 #[inline(always)]
-pub fn schlick(cosine: f64, ref_idx: f64) -> f64 {
+pub fn schlick(cosine: f32, ref_idx: f32) -> f32 {
     let r0 = (1.0 - ref_idx) / (1.0 + ref_idx);
     let r0 = r0 * r0;
     r0 + (1.0 - r0) * (1.0 - cosine).powi(5)
@@ -36,12 +37,12 @@ pub fn schlick(cosine: f64, ref_idx: f64) -> f64 {
 
 
 
-pub fn ray_color_dup(ray: &Ray, world: &KdNode, depth: u32) -> Vector3<f64> {
+pub fn ray_color_dup(ray: &Ray, world: &KdNode, depth: u32,tmax: f32) -> Vector3<f32> {
     if depth == 0 {
         return Vector3::new(0.0, 0.0, 0.0);
     }
     //let l = Light::new(Point3::new(0.0, 0.0, 14.0),0.01);
-    // if let Some(hit_record) = world.hit(ray, 0.001, f64::INFINITY) {
+    // if let Some(hit_record) = world.hit(ray, 0.001, f32::INFINITY) {
     //     if let Some(scatter_record) = hit_record.material.scatter(ray, &hit_record) {
     //         return scatter_record.attenuation * ray_color(&scatter_record.scattered, world, depth - 1);
     //     }
@@ -50,30 +51,66 @@ pub fn ray_color_dup(ray: &Ray, world: &KdNode, depth: u32) -> Vector3<f64> {
     //     // }
     //     return Vector3::new(0.0, 0.0, 0.0);
     // }
-    if let Some(hit_record) = world.hit(ray, 0.001, f64::INFINITY) {
+    if let Some(hit_record) = world.hit(ray, 0.001, tmax) {
         let scatter_result = hit_record.material.scatter(ray, &hit_record);
         if let Some((attenuation, scattered_ray)) = scatter_result {
             //let shadow = is_in_shadow(world, &hit_record.p, &l);
             // return attenuation.component_mul( &ray_color(&scattered_ray, world, depth - 1));
             
+            //hadamard product
+            return attenuation.component_mul(&ray_color_dup(&scattered_ray, world, depth - 1,tmax));
             
-            return attenuation.component_mul(&ray_color_dup(&scattered_ray, world, depth - 1));
-            
-        }
+        } 
+        else {
         return Vector3::new(0.0, 0.0, 0.0);
+        }
     }
-
+ 
+    
     let unit_direction = ray.direction.normalize();
     let t = 0.5 * (unit_direction.y + 1.0);
     Vector3::new(1.0, 1.0, 1.0) * (1.0 - t) + Vector3::new(0.5, 0.7, 1.0) * t
 }
-// pub fn ray_color(ray: &Ray, world: &Arc<BVHNode>, depth: u32) -> Vector3<f64> {
+
+// pub fn ray_color_iter(ray: &Ray, world: &KdNode, max_depth: u32, tmax: f32) -> Vector3<f32> {
+//     let mut result_color = Arc::new( Mutex::new(Vector3::new(1.0, 1.0, 1.0)));
+//     let mut current_ray = Some(ray.clone());
+//     let mut depth = max_depth;
+
+//     rayon::iter::repeat(())
+//         .take(max_depth as usize)
+//         .for_each(|_| {
+//             if let Some(ref r) = current_ray {
+//                 if let Some(hit_record) = world.hit(r, 0.001, tmax) {
+//                     if let Some((attenuation, scattered_ray)) = hit_record.material.scatter(r, &hit_record) {
+//                         result_color = Arc::new(Mutex::new((*&result_color).lock().unwrap().component_mul(&attenuation)));
+//                         current_ray = Some(scattered_ray);
+//                         depth -= 1;
+//                         return;
+//                     } else {
+//                         result_color = Arc::new(Mutex::new(Vector3::new(0.0, 0.0, 0.0)));
+//                         return;
+//                     }
+//                 } else {
+//                     let unit_direction = r.direction.normalize();
+//                     let t = 0.5 * (unit_direction.y + 1.0);
+//                     let background_color = Vector3::new(1.0, 1.0, 1.0) * (1.0 - t) + Vector3::new(0.5, 0.7, 1.0) * t;
+//                     result_color = Arc::new(Mutex::new((*result_color).lock().unwrap().component_mul(&background_color)));
+//                     return;
+//                 }
+//             }
+//         });
+
+//     return *(*&result_color).lock().unwrap()
+// }
+
+// pub fn ray_color(ray: &Ray, world: &Arc<BVHNode>, depth: u32) -> Vector3<f32> {
 //     if depth == 0 {
 //         return Vector3::new(0.0, 0.0, 0.0);
 //     }
 //     let l = Light::new(Point3::new(0.0, 0.0, 14.0), 0.01);
 
-//     if let Some(hit_record) = world.hit(ray, 0.001, f64::INFINITY) {
+//     if let Some(hit_record) = world.hit(ray, 0.001, f32::INFINITY) {
 //         let scatter_result = hit_record.material.scatter(ray, &hit_record);
 //         if let Some((attenuation, scattered_ray)) = scatter_result {
 //             // let shadow = is_in_shadow(world, &hit_record.p, &l);
@@ -86,15 +123,15 @@ pub fn ray_color_dup(ray: &Ray, world: &KdNode, depth: u32) -> Vector3<f64> {
 //     let t = 0.5 * (unit_direction.y + 1.0);
 //     Vector3::new(1.0, 1.0, 1.0) * (1.0 - t) + Vector3::new(0.5, 0.7, 1.0) * t
 // }
-pub fn ray_color(ray: &Ray, world: &Arc<BVHNode>, depth: u32,background_cache: &Mutex<HashMap<(i32, i32), Vector3<f64>>>,) -> Vector3<f64> {
-    if depth == 0 || random_f64() < 0.001 {
+pub fn ray_color(ray: &Ray, world: &Arc<BVHNode>, depth: u32,background_cache: &Mutex<HashMap<(i32, i32), Vector3<f32>>>,) -> Vector3<f32> {
+    if depth == 0 || random_f32() < 0.001 {
         return Vector3::new(0.0, 0.0, 0.0);
     }
     //let l = Light::new(Point3::new(0.0, 0.0, 14.0), 0.01);
 
     
 
-    if let Some(hit_record) = world.hit(ray, 0.001, f64::INFINITY) {
+    if let Some(hit_record) = world.hit(ray, 0.001, f32::INFINITY) {
         let scatter_result = hit_record.material.scatter(ray, &hit_record);
         if let Some((attenuation, scattered_ray)) = scatter_result {
             let color = attenuation.component_mul(&ray_color(&scattered_ray, world, depth - 1,background_cache));
@@ -130,7 +167,7 @@ pub fn ray_color(ray: &Ray, world: &Arc<BVHNode>, depth: u32,background_cache: &
     color
 }
 impl Hitable for Vec<Arc<dyn Hitable>> {
-    fn hit(&self, ray: &Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
+    fn hit(&self, ray: &Ray, t_min: f32, t_max: f32) -> Option<HitRecord> {
         let mut closest_hit: Option<HitRecord> = None;
         let mut closest_t = t_max;
 
@@ -143,19 +180,19 @@ impl Hitable for Vec<Arc<dyn Hitable>> {
 
         closest_hit
     }
-    fn bounding_box(&self, t0: f64, t1: f64) -> Option<AABB> {
+    fn bounding_box(&self, t0: f32, t1: f32) -> Option<AABB> {
         return None;
     }
 }
 #[inline]
-pub fn random_f64() -> f64 {
+pub fn random_f32() -> f32 {
     rand::thread_rng().gen_range(0.0..1.0)
 }
 #[inline]
-pub fn random_in_unit_sphere() -> Vector3<f64> {
+pub fn random_in_unit_sphere() -> Vector3<f32> {
     let mut rng = rand::thread_rng();
     loop {
-        let p = 2.0 * Vector3::new(rng.gen::<f64>(), rng.gen::<f64>(), rng.gen::<f64>())
+        let p = 2.0 * Vector3::new(rng.gen::<f32>(), rng.gen::<f32>(), rng.gen::<f32>())
             - Vector3::new(1.0, 1.0, 1.0);
         if p.magnitude_squared() < 1.0 {
             return p;
@@ -163,7 +200,7 @@ pub fn random_in_unit_sphere() -> Vector3<f64> {
     }
 }
 #[inline]
-pub fn random_unit_vector(normal: Vector3<f64>) -> Vector3<f64> {
+pub fn random_unit_vector(normal: Vector3<f32>) -> Vector3<f32> {
     let mut rng = rand::thread_rng();
     loop {
         let random_vector = Vector3::new(rng.gen_range(-1.0..=1.0), rng.gen_range(-1.0..=1.0), rng.gen_range(-1.0..=1.0));
@@ -176,7 +213,7 @@ pub fn random_unit_vector(normal: Vector3<f64>) -> Vector3<f64> {
     }
 }
 #[inline]
-pub fn random_in_unit_disk() -> Vector3<f64> {
+pub fn random_in_unit_disk() -> Vector3<f32> {
     let mut rng = rand::thread_rng();
     loop {
         let p = Vector3::new(
@@ -189,7 +226,7 @@ pub fn random_in_unit_disk() -> Vector3<f64> {
         }
     }
 }
-// fn is_in_shadow(world: &Vec<Box<dyn Hitable>>, point: &Point3<f64>, light: &Light) -> bool {
+// fn is_in_shadow(world: &Vec<Box<dyn Hitable>>, point: &Point3<f32>, light: &Light) -> bool {
 //     let light_direction = (light.source() - *point).normalize();
 //     let shadow_ray = Ray::new(*point, light_direction);
 

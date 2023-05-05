@@ -6,13 +6,13 @@ use nalgebra::{Point3, Vector3};
 use crate::material::Material;
 
 pub struct Cube {
-    min: Point3<f64>,
-    max: Point3<f64>,
+    min: Point3<f32>,
+    max: Point3<f32>,
     material: Arc<dyn Material>,
 }
 
 impl Cube {
-    pub fn new(min: Point3<f64>, max: Point3<f64>, material: Arc<dyn Material>) -> Self {
+    pub fn new(min: Point3<f32>, max: Point3<f32>, material: Arc<dyn Material>) -> Self {
         Cube {
             min,
             max,
@@ -22,7 +22,7 @@ impl Cube {
 }
 
 impl Hitable for Cube {
-    fn hit(&self, ray: &Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
+    fn hit(&self, ray: &Ray, t_min: f32, t_max: f32) -> Option<HitRecord> {
         let mut hit_record = None;
         let mut current_t = t_max;
 
@@ -55,7 +55,7 @@ impl Hitable for Cube {
         hit_record
     }
 
-    fn bounding_box(&self, _t0: f64, _t1: f64) -> Option<AABB> {
+    fn bounding_box(&self, _t0: f32, _t1: f32) -> Option<AABB> {
         Some(AABB::new(self.min, self.max))
     }
 }

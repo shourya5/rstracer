@@ -4,23 +4,23 @@ use nalgebra::{Point3, Vector3};
 
 #[derive(Copy, Clone,Debug)]
 pub struct Camera {
-    origin: Point3<f64>,
-    lower_left_corner: Point3<f64>,
-    horizontal: Vector3<f64>,
-    vertical: Vector3<f64>,
-    u: Vector3<f64>,
-    v: Vector3<f64>,
-    lens_radius: f64,
+    origin: Point3<f32>,
+    lower_left_corner: Point3<f32>,
+    horizontal: Vector3<f32>,
+    vertical: Vector3<f32>,
+    u: Vector3<f32>,
+    v: Vector3<f32>,
+    lens_radius: f32,
 }
 impl Camera {
     pub fn new(
-        origin: Point3<f64>,
-        look_at: Point3<f64>,
-        vup: Vector3<f64>,
-        vfov: f64,
-        aspect_ratio: f64,
-        aperture: f64,
-        focus_dist: f64,
+        origin: Point3<f32>,
+        look_at: Point3<f32>,
+        vup: Vector3<f32>,
+        vfov: f32,
+        aspect_ratio: f32,
+        aperture: f32,
+        focus_dist: f32,
     ) -> Self {
         let theta = vfov.to_radians();
         let h = (theta / 2.0).tan();
@@ -45,7 +45,7 @@ impl Camera {
             lens_radius: aperture / 2.0,
         }
     }
-    pub fn get_ray(&self, u: f64, v: f64) -> Ray {
+    pub fn get_ray(&self, u: f32, v: f32) -> Ray {
         let rd = self.lens_radius * random_in_unit_disk();
         let offset = self.u * rd.x + self.v * rd.y;
         let direction = self.lower_left_corner + u * self.horizontal + v * self.vertical - self.origin - offset;
