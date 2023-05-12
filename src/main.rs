@@ -15,7 +15,7 @@ pub mod metal;
 pub mod ray;
 pub mod sphere;
 pub mod util;
-pub mod wave;
+
 use bvhnode::BVHNode;
 use camera::Camera;
 use cube::Cube;
