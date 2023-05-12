@@ -1,8 +1,7 @@
 use nalgebra::{Point3, Vector3};
-use std::hash::{Hash, Hasher};
 
+//#[derive(Clone)]
 
-#[derive(Clone)]
 pub struct Ray {
     pub origin: Point3<f32>,
     pub direction: Vector3<f32>,
@@ -14,13 +13,6 @@ impl Ray {
     }
 
     pub fn point_at_parameter(&self, t: f32) -> Point3<f32> {
-        return self.origin + (self.direction * t)
+        return self.origin + (self.direction * t);
     }
 }
-
-
-
-
-
-
-

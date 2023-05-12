@@ -1,5 +1,8 @@
-use crate::{Hitable, HitRecord, Ray, aabb::{AABB, surrounding_box}};
-use nalgebra::{Point3, Vector3};
+use crate::{
+    aabb::{surrounding_box, AABB},
+    HitRecord, Hitable, Ray,
+};
+
 use std::sync::Arc;
 
 pub struct KdNode {
@@ -44,7 +47,9 @@ impl KdNode {
         objects.sort_by(|a, b| {
             let aabb_a = a.bounding_box(0.0, 0.0).unwrap();
             let aabb_b = b.bounding_box(0.0, 0.0).unwrap();
-            aabb_a.min[axis.try_into().unwrap()].partial_cmp(&aabb_b.min[axis.try_into().unwrap()]).unwrap()
+            aabb_a.min[axis.try_into().unwrap()]
+                .partial_cmp(&aabb_b.min[axis.try_into().unwrap()])
+                .unwrap()
         });
 
         let middle = objects.len() / 2;
@@ -58,7 +63,8 @@ impl KdNode {
         } else if objects.len() == 2 {
             let left = Box::new(KdNode::new(&mut objects[..middle], depth + 1));
             let right = Box::new(KdNode::new(&mut objects[middle..], depth + 1));
-            let bounding_box = left.bounding_box
+            let bounding_box = left
+                .bounding_box
                 .as_ref()
                 .and_then(|l_box| right.bounding_box.as_ref().map(|r_box| l_box.union(r_box)));
 
@@ -71,7 +77,8 @@ impl KdNode {
         } else {
             let left = Box::new(KdNode::new(&mut objects[..middle], depth + 1));
             let right = Box::new(KdNode::new(&mut objects[middle..], depth + 1));
-            let bounding_box = left.bounding_box
+            let bounding_box = left
+                .bounding_box
                 .as_ref()
                 .and_then(|l_box| right.bounding_box.as_ref().map(|r_box| l_box.union(r_box)));
 
@@ -85,6 +92,50 @@ impl KdNode {
 
         node
     }
+    // pub fn new(objects: &mut [Arc<dyn Hitable>], depth: u32) -> Self {
+    //     let axis = depth % 3;
+
+    //     // Find the position that minimizes the SAH cost.
+    //     let (min_cost_pos, min_cost) = objects.iter()
+    //         .map(|object| {
+    //             let bbox = object.bounding_box(0.0, 0.0).unwrap();
+    //             let pos = bbox.centroid()[axis.try_into().unwrap()];
+    //             let cost = split_sah(objects, axis.try_into().unwrap(), pos);
+    //             (pos, cost)
+    //         })
+    //         .min_by(|&(_, cost1), &(_, cost2)| cost1.partial_cmp(&cost2).unwrap())
+    //         .unwrap();
+
+    //     // Partition the objects based on the chosen position.
+    //     let (left_objects, right_objects): (Vec<_>, Vec<_>) = objects.iter().cloned()
+    //         .partition(|&object| {
+    //             let bbox = object.bounding_box(0.0, 0.0).unwrap();
+    //             bbox.centroid()[axis.try_into().unwrap()] <= min_cost_pos
+    //         });
+
+    //     let left = if !left_objects.is_empty() {
+    //         Some(Box::new(KdNode::new(&mut left_objects[..], depth + 1)))
+    //     } else {
+    //         None
+    //     };
+
+    //     let right = if !right_objects.is_empty() {
+    //         Some(Box::new(KdNode::new(&mut right_objects[..], depth + 1)))
+    //     } else {
+    //         None
+    //     };
+
+    //     let bounding_box = left
+    //         .as_ref()
+    //         .and_then(|l_box| right.as_ref().map(|r_box| l_box.bounding_box.union(&r_box.bounding_box)));
+
+    //     KdNode {
+    //         left,
+    //         right,
+    //         hitable: None,
+    //         bounding_box,
+    //     }
+    // }
 
     pub fn from_objects(objects: Vec<Arc<dyn Hitable>>) -> Self {
         let mut objects = objects;

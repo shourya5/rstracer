@@ -1,10 +1,9 @@
 use nalgebra::Point3;
 
 pub struct Light {
-    source:Point3<f32>,
-    radius:f32
+    source: Point3<f32>,
+    radius: f32,
 }
-
 
 impl Light {
     // Constructor to create a new Light instance

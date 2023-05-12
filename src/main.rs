@@ -1,201 +1,190 @@
 pub mod aabb;
-pub mod ray;
-pub mod dielectric;
-pub mod camera;
-pub mod material;
-pub mod lambertian;
-pub mod hitrecord;
-pub mod sphere;
-pub mod util;
-pub mod cylinder;
-pub mod metal;
-pub mod cube;
-pub mod light;
 pub mod bvhnode;
+pub mod camera;
 pub mod cone;
+pub mod cube;
+pub mod cylinder;
+pub mod dielectric;
+pub mod hitrecord;
 pub mod kdnode;
 pub mod kdtree;
+pub mod lambertian;
+pub mod light;
+pub mod material;
+pub mod metal;
+pub mod ray;
+pub mod sphere;
+pub mod util;
+pub mod wave;
 use bvhnode::BVHNode;
 use camera::Camera;
 use cube::Cube;
-use dielectric::Dielectric;
+
 use hitrecord::{HitRecord, Hitable};
 use image::{ImageBuffer, Rgb};
 // use kdnode::KdNode;
 
 use kdnode::KdNode;
-use lambertian::Lambertian;
-use metal::Metal;
-use nalgebra::{Point3, Vector3, distance_squared, distance};
+
+use material::Material;
+use nalgebra::{distance, distance_squared, Point3, Vector3};
 // use rand::Rng;
 use sphere::Sphere;
-use util::{random_f32, ray_color, ray_color_dup};
 use std::collections::HashMap;
 use std::fs::File;
 use std::sync::{Arc, Mutex};
+use util::{random_f32, ray_color, ray_color_dup};
 
 // use std::io::{prelude::*, self};
-use std::rc::Rc;
-use std::io::Write;
 use crate::ray::Ray;
-use rand::{Rng, thread_rng};
+use rand::{thread_rng, Rng};
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
+use std::io::Write;
+use std::rc::Rc;
 
 use rayon::iter::repeat;
 use rayon::prelude::*;
 
+//     fn main() {
+//         // Image
+//         let aspect_ratio = 16.0 / 9.0;
+//         let image_width = 400;
+//         let image_height = (image_width as f32 / aspect_ratio) as u32;
+//         let samples_per_pixel = 150;
+//         let max_depth = 60;
 
+//         // World
+//         let world = random_scene();
 
+//         // Camera
+//         let lookfrom = Point3::new(10.0, 4.0, 9.0);
+//         let lookat = Point3::new(0.0, 0.0, 0.0);
+//         let vup = Vector3::new(0.0, 1.0, 0.0);
+//         let dist_to_focus = 10.0;
+//         let aperture = 0.09;
+//         let camera = Camera::new(
+//             lookfrom,
+//             lookat,
+//             vup,
+//             20.0,
+//             aspect_ratio,
+//             aperture,
+//             dist_to_focus,
+//         );
 
+//         //let mut image_data: Vec<u8> = Vec::<u8>::new();
+//         let mut img = ImageBuffer::new(image_width, image_height);
+//         //let mut row_data = Vec::<u8>::new();
+//         for j in (0..image_height).rev() {
+//             for i in 0..image_width {
+//                 let mut pixel_color = Vector3::new(0.0, 0.0, 0.0);
+//                 for _ in 0..samples_per_pixel {
+//                     let u = (i as f32 + random_f32()) / (image_width - 1) as f32;
+//                     let v = (j as f32 + random_f32()) / (image_height - 1) as f32;
+//                     let ray = camera.get_ray(u, v);
+//                     pixel_color += ray_color(&ray, &world, max_depth);
+//                 }
 
+//             // Apply gamma correction and write the pixel color
+//             let scale = 1.0 / samples_per_pixel as f32;
+//             let r = (pixel_color.x * scale).sqrt();
+//             let g = (pixel_color.y * scale).sqrt();
+//             let b = (pixel_color.z * scale).sqrt();
 
+//             let ir = (255.99 * r.clamp(0.0, 0.999)) as u8;
+//             let ig = (255.99 * g.clamp(0.0, 0.999)) as u8;
+//             let ib = (255.99 * b.clamp(0.0, 0.999)) as u8;
 
+//             // image_data.push(ir);
+//             // image_data.push(ig);
+//             // image_data.push(ib);
+//             img.put_pixel(i, image_height - 1 - j, Rgb([ir, ig, ib]));
+//         }
+//         // let mut file = File::create("outputx.ppm").unwrap();
+//         // file.write_all(format!("P6\n{} {}\n255\n", image_width, image_height).as_bytes())
+//         //     .unwrap();
+//         // file.write_all(&image_data).unwrap();
+//         // let mut file = File::create("outputx.png").unwrap();
 
+//     }
+//     img.save("outputx.png").unwrap();
+// }
+fn main() {
+    // Image
+    let aspect_ratio = 16.0 / 9.0;
+    let image_width = 400;
+    let image_height = (image_width as f64 / aspect_ratio) as u32;
+    let samples_per_pixel = 80;
+    let max_depth: u32 = 45;
 
-        
-    //     fn main() {
-    //         // Image
-    //         let aspect_ratio = 16.0 / 9.0;
-    //         let image_width = 400;
-    //         let image_height = (image_width as f32 / aspect_ratio) as u32;
-    //         let samples_per_pixel = 150;
-    //         let max_depth = 60;
-        
-    //         // World
-    //         let world = random_scene();
-        
-    //         // Camera
-    //         let lookfrom = Point3::new(10.0, 4.0, 9.0);
-    //         let lookat = Point3::new(0.0, 0.0, 0.0);
-    //         let vup = Vector3::new(0.0, 1.0, 0.0);
-    //         let dist_to_focus = 10.0;
-    //         let aperture = 0.09;
-    //         let camera = Camera::new(
-    //             lookfrom,
-    //             lookat,
-    //             vup,
-    //             20.0,
-    //             aspect_ratio,
-    //             aperture,
-    //             dist_to_focus,
-    //         );
-        
-    //         //let mut image_data: Vec<u8> = Vec::<u8>::new();
-    //         let mut img = ImageBuffer::new(image_width, image_height);
-    //         //let mut row_data = Vec::<u8>::new();
-    //         for j in (0..image_height).rev() {
-    //             for i in 0..image_width {
-    //                 let mut pixel_color = Vector3::new(0.0, 0.0, 0.0);
-    //                 for _ in 0..samples_per_pixel {
-    //                     let u = (i as f32 + random_f32()) / (image_width - 1) as f32;
-    //                     let v = (j as f32 + random_f32()) / (image_height - 1) as f32;
-    //                     let ray = camera.get_ray(u, v);
-    //                     pixel_color += ray_color(&ray, &world, max_depth);
-    //                 }
+    // World
+    let world = random_scene();
+    let scene_bounding_box = world.bounding_box.unwrap();
+    let diagonal_length = (scene_bounding_box.max - scene_bounding_box.min).norm();
+    let t_max = diagonal_length;
+    //dbg!(t_max);
 
-    //             // Apply gamma correction and write the pixel color
-    //             let scale = 1.0 / samples_per_pixel as f32;
-    //             let r = (pixel_color.x * scale).sqrt();
-    //             let g = (pixel_color.y * scale).sqrt();
-    //             let b = (pixel_color.z * scale).sqrt();
+    // Camera
+    let lookfrom = Point3::new(12.0, 6.0, 12.0);
 
-    //             let ir = (255.99 * r.clamp(0.0, 0.999)) as u8;
-    //             let ig = (255.99 * g.clamp(0.0, 0.999)) as u8;
-    //             let ib = (255.99 * b.clamp(0.0, 0.999)) as u8;
+    let lookat = Point3::new(0.0, 0.0, 0.0);
+    let vup = Vector3::new(0.0, 1.0, 0.0);
+    let dist_to_focus = 10.0;
+    let aperture = 0.09;
+    let camera = Camera::new(
+        lookfrom,
+        lookat,
+        vup,
+        20.0,
+        aspect_ratio as f32,
+        aperture,
+        dist_to_focus,
+    );
 
-    //             // image_data.push(ir);
-    //             // image_data.push(ig);
-    //             // image_data.push(ib);
-    //             img.put_pixel(i, image_height - 1 - j, Rgb([ir, ig, ib]));
+    //let bs = Arc::new(Mutex::new(HashMap::<i32, i32>::new()));
+    let mut img: ImageBuffer<Rgb<u8>, Vec<_>> = ImageBuffer::new(image_width, image_height);
+    // for j in (0..image_height).rev() {
+    //     for i in 0..image_width {
+    //         let mut pixel_color = Vector3::new(0.0, 0.0, 0.0);
+    //         for _ in 0..samples_per_pixel {
+    //             let u = (i as f32 + random_f32()) / (image_width - 1) as f32;
+    //             let v = (j as f32 + random_f32()) / (image_height - 1) as f32;
+    //             let ray = camera.get_ray(u, v);
+    //             pixel_color += ray_color(&ray, &world, max_depth);
     //         }
-    //         // let mut file = File::create("outputx.ppm").unwrap();
-    //         // file.write_all(format!("P6\n{} {}\n255\n", image_width, image_height).as_bytes())
-    //         //     .unwrap();
-    //         // file.write_all(&image_data).unwrap();
-    //         // let mut file = File::create("outputx.png").unwrap();
-            
-            
-    //     }
-    //     img.save("outputx.png").unwrap();
-    // }
-    fn main() {
-        // Image
-        let aspect_ratio = 16.0 / 9.0;
-        let image_width = 400;
-        let image_height = (image_width as f64 / aspect_ratio) as u32;
-        let samples_per_pixel = 50;
-        let max_depth: u32 = 25;
-    
-        // World
-        let world = random_scene();
-        let scene_bounding_box = world.bounding_box.unwrap();
-        let diagonal_length = (scene_bounding_box.max - scene_bounding_box.min).norm();
-        let t_max = diagonal_length;
-        //dbg!(t_max);
-    
-        // Camera
-        let lookfrom = Point3::new(12.0, 6.0, 12.0);
-        
-        let lookat = Point3::new(0.0, 0.0, 0.0);
-        let vup = Vector3::new(0.0, 1.0, 0.0);
-        let dist_to_focus = 10.0;
-        let aperture = 0.09;
-        let camera = Camera::new(
-            lookfrom,
-            lookat,
-            vup,
-            20.0,
-            aspect_ratio as f32,
-            aperture,
-            dist_to_focus,
-        );
-    
-         //let bs = Arc::new(Mutex::new(HashMap::<i32, i32>::new()));
-        let mut img: ImageBuffer<Rgb<u8>, Vec<_>> = ImageBuffer::new(image_width, image_height);
-        // for j in (0..image_height).rev() {
-        //     for i in 0..image_width {
-        //         let mut pixel_color = Vector3::new(0.0, 0.0, 0.0);
-        //         for _ in 0..samples_per_pixel {
-        //             let u = (i as f32 + random_f32()) / (image_width - 1) as f32;
-        //             let v = (j as f32 + random_f32()) / (image_height - 1) as f32;
-        //             let ray = camera.get_ray(u, v);
-        //             pixel_color += ray_color(&ray, &world, max_depth);
-        //         }
-        //         //println!("{}", pixel_color);
-        //         // Apply gamma correction and write the pixel color
-        //         let scale = 1.0 / samples_per_pixel as f32;
-        //         let r = (pixel_color.x * scale).sqrt();
-        //         let g = (pixel_color.y * scale).sqrt();
-        //         let b = (pixel_color.z * scale).sqrt();
-    
-        //         let ir = (255.99 * r.clamp(0.0, 0.999)) as u8;
-        //         let ig = (255.99 * g.clamp(0.0, 0.999)) as u8;
-        //         let ib = (255.99 * b.clamp(0.0, 0.999)) as u8;
-    
-        //         img.put_pixel(i, image_height - 1 - j, Rgb([ir, ig, ib]));
-               
-        //     }
-        // }
-        //let mut img = ImageBuffer::new(image_width, image_height);
-        //println!("built world");
-        let world_arc = Arc::new(world);
+    //         //println!("{}", pixel_color);
+    //         // Apply gamma correction and write the pixel color
+    //         let scale = 1.0 / samples_per_pixel as f32;
+    //         let r = (pixel_color.x * scale).sqrt();
+    //         let g = (pixel_color.y * scale).sqrt();
+    //         let b = (pixel_color.z * scale).sqrt();
 
-let data: Vec<(u32, u32, Rgb<u8>)> = (0..image_height)
-    .into_par_iter()
-    .rev()
-    .flat_map(move |j| {
-        let world = Arc::clone(&world_arc);
-        (0..image_width)
-            .into_par_iter()
-            .map(move |i| {
+    //         let ir = (255.99 * r.clamp(0.0, 0.999)) as u8;
+    //         let ig = (255.99 * g.clamp(0.0, 0.999)) as u8;
+    //         let ib = (255.99 * b.clamp(0.0, 0.999)) as u8;
+
+    //         img.put_pixel(i, image_height - 1 - j, Rgb([ir, ig, ib]));
+
+    //     }
+    // }
+    //let mut img = ImageBuffer::new(image_width, image_height);
+    //println!("built world");
+    let world_arc = Arc::new(world);
+
+    let data: Vec<(u32, u32, Rgb<u8>)> = (0..image_height)
+        .into_par_iter()
+        .rev()
+        .flat_map(move |j| {
+            let world = Arc::clone(&world_arc);
+            (0..image_width).into_par_iter().map(move |i| {
                 let mut pixel_color = Vector3::new(0.0, 0.0, 0.0);
-                
+
                 for _ in 0..samples_per_pixel {
                     let u = (i as f32 + random_f32()) / (image_width - 1) as f32;
                     let v = (j as f32 + random_f32()) / (image_height - 1) as f32;
                     let ray = camera.get_ray(u, v);
                     //println!("here camera");
-                    pixel_color += ray_color_dup(&ray, &world, max_depth,t_max);
+                    pixel_color += ray_color_dup(&ray, &world, max_depth, t_max);
                 }
 
                 let scale = 1.0 / samples_per_pixel as f32;
@@ -209,53 +198,47 @@ let data: Vec<(u32, u32, Rgb<u8>)> = (0..image_height)
 
                 (i, image_height - 1 - j, Rgb([ir, ig, ib]))
             })
-    })
-    .collect();
-// let data: Vec<(u32, u32, Rgb<u8>)> = (0..image_height)
-//     .into_par_iter()
-//     .rev()
-//     .flat_map(move |j| {
-//         //let background_cache = Arc::clone(&bs); // add the `move` keyword here
-//         let world  = &world; // clone the Arc<BVHNode> here
-//         (0..image_width)
-//             .into_par_iter()
-//             .map(move |i| { // add the `move` keyword here
-//                 let mut pixel_color = Vector3::new(0.0, 0.0, 0.0);
-                
-//                 for _ in 0..samples_per_pixel {
-//                     let u = (i as f32 + random_f32()) / (image_width - 1) as f32;
-//                     let v = (j as f32 + random_f32()) / (image_height - 1) as f32;
-//                     let ray = camera.get_ray(u, v);
-//                     pixel_color += ray_color_dup(&ray, &world, max_depth);
-//                 }
+        })
+        .collect();
+    // let data: Vec<(u32, u32, Rgb<u8>)> = (0..image_height)
+    //     .into_par_iter()
+    //     .rev()
+    //     .flat_map(move |j| {
+    //         //let background_cache = Arc::clone(&bs); // add the `move` keyword here
+    //         let world  = &world; // clone the Arc<BVHNode> here
+    //         (0..image_width)
+    //             .into_par_iter()
+    //             .map(move |i| { // add the `move` keyword here
+    //                 let mut pixel_color = Vector3::new(0.0, 0.0, 0.0);
 
+    //                 for _ in 0..samples_per_pixel {
+    //                     let u = (i as f32 + random_f32()) / (image_width - 1) as f32;
+    //                     let v = (j as f32 + random_f32()) / (image_height - 1) as f32;
+    //                     let ray = camera.get_ray(u, v);
+    //                     pixel_color += ray_color_dup(&ray, &world, max_depth);
+    //                 }
 
-//                 let scale = 1.0 / samples_per_pixel as f32;
-//                 let r = (pixel_color.x * scale).sqrt();
-//                 let g = (pixel_color.y * scale).sqrt();
-//                 let b = (pixel_color.z * scale).sqrt();
+    //                 let scale = 1.0 / samples_per_pixel as f32;
+    //                 let r = (pixel_color.x * scale).sqrt();
+    //                 let g = (pixel_color.y * scale).sqrt();
+    //                 let b = (pixel_color.z * scale).sqrt();
 
-//                 let ir = (255.99 * r.clamp(0.0, 0.999)) as u8;
-//                 let ig = (255.99 * g.clamp(0.0, 0.999)) as u8;
-//                 let ib = (255.99 * b.clamp(0.0, 0.999)) as u8;
+    //                 let ir = (255.99 * r.clamp(0.0, 0.999)) as u8;
+    //                 let ig = (255.99 * g.clamp(0.0, 0.999)) as u8;
+    //                 let ib = (255.99 * b.clamp(0.0, 0.999)) as u8;
 
-//                 (i, image_height - 1 - j, Rgb([ir, ig, ib]))
-//             })
-//     })
-//     .collect();
-
+    //                 (i, image_height - 1 - j, Rgb([ir, ig, ib]))
+    //             })
+    //     })
+    //     .collect();
 
     for (i, j, pixel) in data {
-    img.put_pixel(i, j, pixel);
+        img.put_pixel(i, j, pixel);
     }
-        img.save("outputbvhx.png").unwrap();
-    }
-    
-            
-        
-        
-// Implement the Material trait for diffuse materials (Lambertian)
+    img.save("outputrerun.png").unwrap();
+}
 
+// Implement the Material trait for diffuse materials (Lambertian)
 
 // Helper function to generate random points in a unit sphere
 
@@ -264,7 +247,6 @@ let data: Vec<(u32, u32, Rgb<u8>)> = (0..image_height)
 // Dielectric struct representing a dielectric material
 
 // Helper function to refract a vector
-
 
 fn random_vector3(min: f32, max: f32) -> Vector3<f32> {
     let mut rng = rand::thread_rng();
@@ -357,7 +339,10 @@ fn random_scene() -> KdNode {
     world.push(Arc::new(Sphere::new(
         Point3::new(0.0, -1000.0, 0.0),
         1000.0,
-        Arc::new(Lambertian::new(Vector3::new(0.5, 0.5, 0.5))),
+        //Arc::new(Lambertian::new(Vector3::new(0.5, 0.5, 0.5))),
+        Material::Lambertian {
+            albedo: (Vector3::new(0.5, 0.5, 0.5)),
+        },
     )));
 
     //Random small spheres
@@ -377,7 +362,7 @@ fn random_scene() -> KdNode {
                     world.push(Arc::new(Sphere::new(
                         center,
                         0.2,
-                        Arc::new(Lambertian::new(albedo)),
+                        Material::Lambertian { albedo: (albedo) },
                     )));
                 } else if choose_mat < 0.95 {
                     // Metal material
@@ -386,14 +371,17 @@ fn random_scene() -> KdNode {
                     world.push(Arc::new(Sphere::new(
                         center,
                         0.2,
-                        Arc::new(Metal::new(albedo, fuzz)),
+                        Material::Metal {
+                            albedo: (albedo),
+                            fuzz: (fuzz),
+                        },
                     )));
                 } else {
                     // Dielectric material
                     world.push(Arc::new(Sphere::new(
                         center,
                         0.2,
-                        Arc::new(Dielectric::new(1.5)),
+                        Material::Dielectric { ref_idx: (1.5) },
                     )));
                 }
             }
@@ -411,28 +399,36 @@ fn random_scene() -> KdNode {
     world.push(Arc::new(Cube::new(
         mini,
         maxi,
-        Arc::new(Dielectric::new(1.5)),
+        Material::Dielectric { ref_idx: (1.5) },
     )));
     world.push(Arc::new(Sphere::new(
         Point3::new(-4.0, 1.0, 0.0),
         1.0,
-        Arc::new(Lambertian::new(Vector3::new(0.1, 0.2, 0.1))),
+        //Arc::new(Lambertian::new(Vector3::new(0.1, 0.2, 0.1))),
+        Material::Lambertian {
+            albedo: (Vector3::new(0.1, 0.2, 0.1)),
+        },
     )));
-    world.push(Arc::new(Sphere::new(Point3::new(4.0, 1.0, 0.0),
-    1.0,
-    Arc::new(Metal::new(Vector3::new(0.7, 0.6, 0.5), 0.0)),
-)));
+    world.push(Arc::new(Sphere::new(
+        Point3::new(4.0, 1.0, 0.0),
+        1.0,
+        //Arc::new(Metal::new(Vector3::new(0.7, 0.6, 0.5), 0.0)),
+        Material::Metal {
+            albedo: (Vector3::new(0.7, 0.6, 0.5)),
+            fuzz: (0.0),
+        },
+    )));
 
-// let time0: f32 = 0.0; 
-// let time1: f32 = 1.0;
+    // let time0: f32 = 0.0;
+    // let time1: f32 = 1.0;
 
-//  let kdtree =  KdTree::new(&mut  world, time0, time1);
-// let t0 = 0.0;
-//     let t1 = 1.0;
-//     let axis = 0;
-//     let kdtree = KdTree::build(&mut world, t0, t1, axis);
+    //  let kdtree =  KdTree::new(&mut  world, time0, time1);
+    // let t0 = 0.0;
+    //     let t1 = 1.0;
+    //     let axis = 0;
+    //     let kdtree = KdTree::build(&mut world, t0, t1, axis);
     //print!("{}", world.len());
     //dbg!(world.len());
-    let kdtree = KdNode::new(&mut world,7);
+    let kdtree = KdNode::new(&mut world, 7);
     return kdtree;
 }

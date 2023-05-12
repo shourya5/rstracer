@@ -12,7 +12,7 @@
 //         right: Box<KdNode>,
 //     },
 // }
-// // 
+// //
 // pub struct KdTree {
 //     pub(crate) root: KdNode,
 // }
@@ -90,7 +90,7 @@
 //     pub fn hit(&self, ray: &Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
 //         Self::hit_node(&self.root, ray, t_min, t_max)
 //     }
-    
+
 //     pub fn hit_node(node: &KdNode, ray: &Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
 //         match node {
 //             KdNode::Empty => None,
@@ -108,7 +108,7 @@
 //                 } else {
 //                     (left, right)
 //                 };
-    
+
 //                 if t_plane > t_max {
 //                     Self::hit_node(first, ray, t_min, t_max)
 //                 } else if t_plane < t_min {
@@ -121,7 +121,6 @@
 //             }
 //         }
 //     }
-    
 
 // }
 // impl Hitable for KdTree {

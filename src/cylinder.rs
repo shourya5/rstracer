@@ -1,5 +1,8 @@
-
-use crate::{Ray, hitrecord::{Hitable, HitRecord}, aabb::AABB};
+use crate::{
+    aabb::AABB,
+    hitrecord::{HitRecord, Hitable},
+    Ray,
+};
 use std::sync::Arc;
 
 use nalgebra::Point3;
@@ -10,11 +13,11 @@ pub struct Cylinder {
     base_center: Point3<f32>,
     height: f32,
     radius: f32,
-    material: Arc<dyn Material>,
+    material: Material,
 }
 
 impl Cylinder {
-    pub fn new(base_center: Point3<f32>, height: f32, radius: f32, material: Arc<dyn Material>) -> Self {
+    pub fn new(base_center: Point3<f32>, height: f32, radius: f32, material: Material) -> Self {
         Cylinder {
             base_center,
             height,
@@ -24,8 +27,11 @@ impl Cylinder {
     }
 
     fn is_point_inside_cylinder(&self, point: &Point3<f32>) -> bool {
-        let dist_sq = (point.x - self.base_center.x).powi(2) + (point.z - self.base_center.z).powi(2);
-        dist_sq < self.radius.powi(2) && point.y >= self.base_center.y && point.y <= self.base_center.y + self.height
+        let dist_sq =
+            (point.x - self.base_center.x).powi(2) + (point.z - self.base_center.z).powi(2);
+        dist_sq < self.radius.powi(2)
+            && point.y >= self.base_center.y
+            && point.y <= self.base_center.y + self.height
     }
 }
 
@@ -50,7 +56,7 @@ impl Hitable for Cylinder {
                             t: *t,
                             p,
                             normal,
-                            material: Arc::clone(&self.material),
+                            material: &self.material,
                         });
                     }
                 }

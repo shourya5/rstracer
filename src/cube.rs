@@ -1,5 +1,9 @@
-use crate::{Ray, hitrecord::{Hitable, HitRecord}, aabb::AABB};
-use std::{sync::Arc};
+use crate::{
+    aabb::AABB,
+    hitrecord::{HitRecord, Hitable},
+    Ray,
+};
+use std::sync::Arc;
 
 use nalgebra::{Point3, Vector3};
 
@@ -8,16 +12,12 @@ use crate::material::Material;
 pub struct Cube {
     min: Point3<f32>,
     max: Point3<f32>,
-    material: Arc<dyn Material>,
+    material: Material,
 }
 
 impl Cube {
-    pub fn new(min: Point3<f32>, max: Point3<f32>, material: Arc<dyn Material>) -> Self {
-        Cube {
-            min,
-            max,
-            material,
-        }
+    pub fn new(min: Point3<f32>, max: Point3<f32>, material: Material) -> Self {
+        Cube { min, max, material }
     }
 }
 
@@ -40,12 +40,13 @@ impl Hitable for Cube {
                     {
                         current_t = t;
                         let mut normal = Vector3::zeros();
-                        normal[dim] = (edge - self.min[dim]) * 2.0 / (self.max[dim] - self.min[dim]) - 1.0;
+                        normal[dim] =
+                            (edge - self.min[dim]) * 2.0 / (self.max[dim] - self.min[dim]) - 1.0;
                         hit_record = Some(HitRecord {
                             t,
                             p,
                             normal,
-                            material: Arc::clone(&self.material),
+                            material: (&self.material),
                         });
                     }
                 }

@@ -1,7 +1,6 @@
 use nalgebra::Point3;
 
-use crate::{ray::Ray, hitrecord::Hitable};
-
+use crate::{hitrecord::Hitable, ray::Ray};
 
 #[derive(Copy, Clone)]
 pub struct AABB {
@@ -54,7 +53,6 @@ impl AABB {
         );
 
         AABB::new(small, big)
-    
     }
     pub fn maximum_extent(&self) -> usize {
         let extent = self.max - self.min;
@@ -73,7 +71,11 @@ impl AABB {
 }
 pub fn box_x_compare(a: &Box<dyn Hitable>, b: &Box<dyn Hitable>) -> std::cmp::Ordering {
     if let (Some(a_box), Some(b_box)) = (a.bounding_box(0.0, 0.0), b.bounding_box(0.0, 0.0)) {
-        a_box.min.x.partial_cmp(&b_box.min.x).unwrap_or(std::cmp::Ordering::Equal)
+        a_box
+            .min
+            .x
+            .partial_cmp(&b_box.min.x)
+            .unwrap_or(std::cmp::Ordering::Equal)
     } else {
         panic!("No bounding box in BVHNode constructor.");
     }
@@ -81,7 +83,11 @@ pub fn box_x_compare(a: &Box<dyn Hitable>, b: &Box<dyn Hitable>) -> std::cmp::Or
 
 pub fn box_y_compare(a: &Box<dyn Hitable>, b: &Box<dyn Hitable>) -> std::cmp::Ordering {
     if let (Some(a_box), Some(b_box)) = (a.bounding_box(0.0, 0.0), b.bounding_box(0.0, 0.0)) {
-        a_box.min.y.partial_cmp(&b_box.min.y).unwrap_or(std::cmp::Ordering::Equal)
+        a_box
+            .min
+            .y
+            .partial_cmp(&b_box.min.y)
+            .unwrap_or(std::cmp::Ordering::Equal)
     } else {
         panic!("No bounding box in BVHNode constructor.");
     }
@@ -89,7 +95,11 @@ pub fn box_y_compare(a: &Box<dyn Hitable>, b: &Box<dyn Hitable>) -> std::cmp::Or
 
 pub fn box_z_compare(a: &Box<dyn Hitable>, b: &Box<dyn Hitable>) -> std::cmp::Ordering {
     if let (Some(a_box), Some(b_box)) = (a.bounding_box(0.0, 0.0), b.bounding_box(0.0, 0.0)) {
-        a_box.min.z.partial_cmp(&b_box.min.z).unwrap_or(std::cmp::Ordering::Equal)
+        a_box
+            .min
+            .z
+            .partial_cmp(&b_box.min.z)
+            .unwrap_or(std::cmp::Ordering::Equal)
     } else {
         panic!("No bounding box in BVHNode constructor.");
     }

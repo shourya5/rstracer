@@ -9,10 +9,17 @@ edition = "2021"
 opt-level = 0
 
 [profile.release]
+codegen-units = 1
 opt-level = 3
+lto = "fat"
+rpath = true
+target-cpu = "native"
+debug = true
 
 [dependencies]
 nalgebra = "0.27.1"
 image = "0.23.14"
 rayon = "1.5.1"
 rand = "0.8.5"
+simba = "0.8.1"
+packed_simd = "0.3.8"

@@ -2,7 +2,7 @@ use crate::{ray::Ray, util::random_in_unit_disk};
 
 use nalgebra::{Point3, Vector3};
 
-#[derive(Copy, Clone,Debug)]
+#[derive(Copy, Clone, Debug)]
 pub struct Camera {
     origin: Point3<f32>,
     lower_left_corner: Point3<f32>,
@@ -48,8 +48,8 @@ impl Camera {
     pub fn get_ray(&self, u: f32, v: f32) -> Ray {
         let rd = self.lens_radius * random_in_unit_disk();
         let offset = self.u * rd.x + self.v * rd.y;
-        let direction = self.lower_left_corner + u * self.horizontal + v * self.vertical - self.origin - offset;
+        let direction =
+            self.lower_left_corner + u * self.horizontal + v * self.vertical - self.origin - offset;
         Ray::new(self.origin + offset, direction)
     }
 }
-

@@ -4,7 +4,7 @@ use std::sync::Arc;
 use rand::Rng;
 
 use crate::{
-    aabb::{AABB, self, box_y_compare, box_x_compare, box_z_compare},
+    aabb::{self, box_x_compare, box_y_compare, box_z_compare, AABB},
     hitrecord::{HitRecord, Hitable},
     ray::Ray,
 };
@@ -22,7 +22,9 @@ impl BVHNode {
         objects.sort_unstable_by(|a, b| {
             let a_box = a.bounding_box(time0, time1).unwrap();
             let b_box = b.bounding_box(time0, time1).unwrap();
-            a_box.min[axis].partial_cmp(&b_box.min[axis]).unwrap_or(Ordering::Equal)
+            a_box.min[axis]
+                .partial_cmp(&b_box.min[axis])
+                .unwrap_or(Ordering::Equal)
         });
 
         let left: Arc<dyn Hitable>;
@@ -100,7 +102,9 @@ impl BVHNode {
         objects.sort_unstable_by(|a, b| {
             let a_box = a.bounding_box(time0, time1).unwrap();
             let b_box = b.bounding_box(time0, time1).unwrap();
-            a_box.min[axis].partial_cmp(&b_box.min[axis]).unwrap_or(Ordering::Equal)
+            a_box.min[axis]
+                .partial_cmp(&b_box.min[axis])
+                .unwrap_or(Ordering::Equal)
         });
 
         let left: Arc<dyn Hitable>;
@@ -125,29 +129,31 @@ impl BVHNode {
 
         Arc::new(BVHNode { left, right, aabb })
     }
-
 }
-
 
 impl Hitable for BVHNode {
     fn hit(&self, ray: &Ray, t_min: f32, t_max: f32) -> Option<HitRecord> {
         if !self.aabb.hit(ray, t_min, t_max) {
             return None;
         }
-    
+
         let (first, second) = if self.aabb.centroid().coords.dot(&ray.direction) < 0.0 {
             (&self.left, &self.right)
         } else {
             (&self.right, &self.left)
         };
-    
+
         let hit_first = first.hit(ray, t_min, t_max);
-    
+
         match hit_first {
             Some(first_rec) => {
                 let hit_second = second.hit(ray, t_min, first_rec.t);
                 match hit_second {
-                    Some(second_rec) => Some(if first_rec.t < second_rec.t { first_rec } else { second_rec }),
+                    Some(second_rec) => Some(if first_rec.t < second_rec.t {
+                        first_rec
+                    } else {
+                        second_rec
+                    }),
                     None => Some(first_rec),
                 }
             }
@@ -158,10 +164,14 @@ impl Hitable for BVHNode {
     fn bounding_box(&self, _t0: f32, _t1: f32) -> Option<AABB> {
         Some(self.aabb)
     }
-    
-   
 }
-fn box_compare(a: &Arc<dyn Hitable>, b: &Arc<dyn Hitable>, axis: usize, time0: f32, time1: f32) -> bool {
+fn box_compare(
+    a: &Arc<dyn Hitable>,
+    b: &Arc<dyn Hitable>,
+    axis: usize,
+    time0: f32,
+    time1: f32,
+) -> bool {
     let a_box = a.bounding_box(time0, time1).unwrap();
     let b_box = b.bounding_box(time0, time1).unwrap();
     a_box.min[axis] < b_box.min[axis]

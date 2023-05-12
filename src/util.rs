@@ -1,14 +1,20 @@
-use std::{sync::{Arc, Mutex}, collections::HashMap};
+use std::{
+    collections::HashMap,
+    sync::{Arc, Mutex},
+};
 
-use nalgebra::{Vector3, Point3};
+use nalgebra::{Point3, Vector3};
 use rand::Rng;
 use rayon::prelude::ParallelIterator;
 
-
-
-
-
-use crate::{ray::Ray, hitrecord::{Hitable, HitRecord}, light::{Light, self}, aabb::AABB, bvhnode::BVHNode, kdnode::KdNode};
+use crate::{
+    aabb::AABB,
+    bvhnode::BVHNode,
+    hitrecord::{HitRecord, Hitable},
+    kdnode::KdNode,
+    light::{self, Light},
+    ray::Ray,
+};
 
 pub fn refract(v: Vector3<f32>, n: Vector3<f32>, ni_over_nt: f32) -> Option<Vector3<f32>> {
     let uv = v.normalize();
@@ -21,12 +27,12 @@ pub fn refract(v: Vector3<f32>, n: Vector3<f32>, ni_over_nt: f32) -> Option<Vect
         None
     }
 }
-#[inline(always)]
+#[inline]
 pub fn reflect(v: Vector3<f32>, n: Vector3<f32>) -> Vector3<f32> {
     v - 2.0 * v.dot(&n) * n
 }
 // Helper function to calculate Schlick's approximation
-#[inline(always)]
+#[inline]
 pub fn schlick(cosine: f32, ref_idx: f32) -> f32 {
     let r0 = (1.0 - ref_idx) / (1.0 + ref_idx);
     let r0 = r0 * r0;
@@ -35,9 +41,7 @@ pub fn schlick(cosine: f32, ref_idx: f32) -> f32 {
 
 // Implement the Material trait for Dielectric
 
-
-
-pub fn ray_color_dup(ray: &Ray, world: &KdNode, depth: u32,tmax: f32) -> Vector3<f32> {
+pub fn ray_color_dup(ray: &Ray, world: &KdNode, depth: u32, tmax: f32) -> Vector3<f32> {
     if depth == 0 {
         return Vector3::new(0.0, 0.0, 0.0);
     }
@@ -56,17 +60,19 @@ pub fn ray_color_dup(ray: &Ray, world: &KdNode, depth: u32,tmax: f32) -> Vector3
         if let Some((attenuation, scattered_ray)) = scatter_result {
             //let shadow = is_in_shadow(world, &hit_record.p, &l);
             // return attenuation.component_mul( &ray_color(&scattered_ray, world, depth - 1));
-            
+
             //hadamard product
-            return attenuation.component_mul(&ray_color_dup(&scattered_ray, world, depth - 1,tmax));
-            
-        } 
-        else {
-        return Vector3::new(0.0, 0.0, 0.0);
+            return attenuation.component_mul(&ray_color_dup(
+                &scattered_ray,
+                world,
+                depth - 1,
+                tmax,
+            ));
+        } else {
+            return Vector3::new(0.0, 0.0, 0.0);
         }
     }
- 
-    
+
     let unit_direction = ray.direction.normalize();
     let t = 0.5 * (unit_direction.y + 1.0);
     Vector3::new(1.0, 1.0, 1.0) * (1.0 - t) + Vector3::new(0.5, 0.7, 1.0) * t
@@ -123,25 +129,32 @@ pub fn ray_color_dup(ray: &Ray, world: &KdNode, depth: u32,tmax: f32) -> Vector3
 //     let t = 0.5 * (unit_direction.y + 1.0);
 //     Vector3::new(1.0, 1.0, 1.0) * (1.0 - t) + Vector3::new(0.5, 0.7, 1.0) * t
 // }
-pub fn ray_color(ray: &Ray, world: &Arc<BVHNode>, depth: u32,background_cache: &Mutex<HashMap<(i32, i32), Vector3<f32>>>,) -> Vector3<f32> {
+pub fn ray_color(
+    ray: &Ray,
+    world: &Arc<BVHNode>,
+    depth: u32,
+    background_cache: &Mutex<HashMap<(i32, i32), Vector3<f32>>>,
+) -> Vector3<f32> {
     if depth == 0 || random_f32() < 0.001 {
         return Vector3::new(0.0, 0.0, 0.0);
     }
     //let l = Light::new(Point3::new(0.0, 0.0, 14.0), 0.01);
 
-    
-
     if let Some(hit_record) = world.hit(ray, 0.001, f32::INFINITY) {
         let scatter_result = hit_record.material.scatter(ray, &hit_record);
         if let Some((attenuation, scattered_ray)) = scatter_result {
-            let color = attenuation.component_mul(&ray_color(&scattered_ray, world, depth - 1,background_cache));
-            
+            let color = attenuation.component_mul(&ray_color(
+                &scattered_ray,
+                world,
+                depth - 1,
+                background_cache,
+            ));
+
             return color;
         }
-        
+
         return Vector3::new(0.0, 0.0, 0.0);
     }
-    
 
     let unit_direction = ray.direction.normalize();
     let t = 0.5 * (unit_direction.y + 1.0);
@@ -155,12 +168,12 @@ pub fn ray_color(ray: &Ray, world: &Arc<BVHNode>, depth: u32,background_cache: &
         );
         let quantized_t = (t * 100.0).round() as i32;
 
-        if let Some(color) = cache.get(&(quantized_t,quantized_t)) {
+        if let Some(color) = cache.get(&(quantized_t, quantized_t)) {
             *color
         } else {
             let new_color =
                 Vector3::new(1.0, 1.0, 1.0) * (1.0 - t) + Vector3::new(0.5, 0.7, 1.0) * t;
-            cache.insert((quantized_t,quantized_t), new_color);
+            cache.insert((quantized_t, quantized_t), new_color);
             new_color
         }
     };
@@ -203,7 +216,11 @@ pub fn random_in_unit_sphere() -> Vector3<f32> {
 pub fn random_unit_vector(normal: Vector3<f32>) -> Vector3<f32> {
     let mut rng = rand::thread_rng();
     loop {
-        let random_vector = Vector3::new(rng.gen_range(-1.0..=1.0), rng.gen_range(-1.0..=1.0), rng.gen_range(-1.0..=1.0));
+        let random_vector = Vector3::new(
+            rng.gen_range(-1.0..=1.0),
+            rng.gen_range(-1.0..=1.0),
+            rng.gen_range(-1.0..=1.0),
+        );
         if random_vector.magnitude_squared() >= 1.0 {
             continue;
         }
@@ -216,11 +233,7 @@ pub fn random_unit_vector(normal: Vector3<f32>) -> Vector3<f32> {
 pub fn random_in_unit_disk() -> Vector3<f32> {
     let mut rng = rand::thread_rng();
     loop {
-        let p = Vector3::new(
-            rng.gen_range(-1.0..1.0),
-            rng.gen_range(-1.0..1.0),
-            0.0,
-        );
+        let p = Vector3::new(rng.gen_range(-1.0..1.0), rng.gen_range(-1.0..1.0), 0.0);
         if p.magnitude_squared() < 1.0 {
             return p;
         }
