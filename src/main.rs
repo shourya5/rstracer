@@ -16,7 +16,9 @@ pub mod ray;
 pub mod sphere;
 pub mod util;
 
-use bvhnode::BVHNode;
+#[global_allocator]
+static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
+
 use camera::Camera;
 use cube::Cube;
 
@@ -27,22 +29,22 @@ use image::{ImageBuffer, Rgb};
 use kdnode::KdNode;
 
 use material::Material;
-use nalgebra::{distance, distance_squared, Point3, Vector3};
+use nalgebra::{Point3, Vector3};
 // use rand::Rng;
 use sphere::Sphere;
-use std::collections::HashMap;
-use std::fs::File;
-use std::sync::{Arc, Mutex};
-use util::{random_f32, ray_color, ray_color_dup};
+
+
+use std::sync::{Arc};
+use util::{random_f32, ray_color_dup};
 
 // use std::io::{prelude::*, self};
 use crate::ray::Ray;
-use rand::{thread_rng, Rng};
+use rand::{Rng};
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
-use std::io::Write;
-use std::rc::Rc;
 
-use rayon::iter::repeat;
+
+
+
 use rayon::prelude::*;
 
 //     fn main() {
@@ -109,7 +111,7 @@ use rayon::prelude::*;
 //     }
 //     img.save("outputx.png").unwrap();
 // }
-fn main() {
+fn render_scene(path : String) {
     // Image
     let aspect_ratio = 16.0 / 9.0;
     let image_width = 400;
@@ -125,7 +127,7 @@ fn main() {
     //dbg!(t_max);
 
     // Camera
-    let lookfrom = Point3::new(12.0, 6.0, 12.0);
+    let lookfrom = Point3::new(12.0, 8.00, 12.0);
 
     let lookat = Point3::new(0.0, 0.0, 0.0);
     let vup = Vector3::new(0.0, 1.0, 0.0);
@@ -143,32 +145,7 @@ fn main() {
 
     //let bs = Arc::new(Mutex::new(HashMap::<i32, i32>::new()));
     let mut img: ImageBuffer<Rgb<u8>, Vec<_>> = ImageBuffer::new(image_width, image_height);
-    // for j in (0..image_height).rev() {
-    //     for i in 0..image_width {
-    //         let mut pixel_color = Vector3::new(0.0, 0.0, 0.0);
-    //         for _ in 0..samples_per_pixel {
-    //             let u = (i as f32 + random_f32()) / (image_width - 1) as f32;
-    //             let v = (j as f32 + random_f32()) / (image_height - 1) as f32;
-    //             let ray = camera.get_ray(u, v);
-    //             pixel_color += ray_color(&ray, &world, max_depth);
-    //         }
-    //         //println!("{}", pixel_color);
-    //         // Apply gamma correction and write the pixel color
-    //         let scale = 1.0 / samples_per_pixel as f32;
-    //         let r = (pixel_color.x * scale).sqrt();
-    //         let g = (pixel_color.y * scale).sqrt();
-    //         let b = (pixel_color.z * scale).sqrt();
-
-    //         let ir = (255.99 * r.clamp(0.0, 0.999)) as u8;
-    //         let ig = (255.99 * g.clamp(0.0, 0.999)) as u8;
-    //         let ib = (255.99 * b.clamp(0.0, 0.999)) as u8;
-
-    //         img.put_pixel(i, image_height - 1 - j, Rgb([ir, ig, ib]));
-
-    //     }
-    // }
-    //let mut img = ImageBuffer::new(image_width, image_height);
-    //println!("built world");
+    
     let world_arc = Arc::new(world);
 
     let data: Vec<(u32, u32, Rgb<u8>)> = (0..image_height)
@@ -200,44 +177,15 @@ fn main() {
             })
         })
         .collect();
-    // let data: Vec<(u32, u32, Rgb<u8>)> = (0..image_height)
-    //     .into_par_iter()
-    //     .rev()
-    //     .flat_map(move |j| {
-    //         //let background_cache = Arc::clone(&bs); // add the `move` keyword here
-    //         let world  = &world; // clone the Arc<BVHNode> here
-    //         (0..image_width)
-    //             .into_par_iter()
-    //             .map(move |i| { // add the `move` keyword here
-    //                 let mut pixel_color = Vector3::new(0.0, 0.0, 0.0);
-
-    //                 for _ in 0..samples_per_pixel {
-    //                     let u = (i as f32 + random_f32()) / (image_width - 1) as f32;
-    //                     let v = (j as f32 + random_f32()) / (image_height - 1) as f32;
-    //                     let ray = camera.get_ray(u, v);
-    //                     pixel_color += ray_color_dup(&ray, &world, max_depth);
-    //                 }
-
-    //                 let scale = 1.0 / samples_per_pixel as f32;
-    //                 let r = (pixel_color.x * scale).sqrt();
-    //                 let g = (pixel_color.y * scale).sqrt();
-    //                 let b = (pixel_color.z * scale).sqrt();
-
-    //                 let ir = (255.99 * r.clamp(0.0, 0.999)) as u8;
-    //                 let ig = (255.99 * g.clamp(0.0, 0.999)) as u8;
-    //                 let ib = (255.99 * b.clamp(0.0, 0.999)) as u8;
-
-    //                 (i, image_height - 1 - j, Rgb([ir, ig, ib]))
-    //             })
-    //     })
-    //     .collect();
 
     for (i, j, pixel) in data {
         img.put_pixel(i, j, pixel);
     }
-    img.save("outputrerun.png").unwrap();
+    img.save(path).unwrap();
 }
-
+fn main() {
+    render_scene("sample.png".to_owned());
+}
 // Implement the Material trait for diffuse materials (Lambertian)
 
 // Helper function to generate random points in a unit sphere

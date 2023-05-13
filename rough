@@ -77,3 +77,33 @@ let world: Vec<Box<dyn Hitable>> = vec![
     
             ambient + diffuse + specular
         }
+
+
+
+
+        // for j in (0..image_height).rev() {
+    //     for i in 0..image_width {
+    //         let mut pixel_color = Vector3::new(0.0, 0.0, 0.0);
+    //         for _ in 0..samples_per_pixel {
+    //             let u = (i as f32 + random_f32()) / (image_width - 1) as f32;
+    //             let v = (j as f32 + random_f32()) / (image_height - 1) as f32;
+    //             let ray = camera.get_ray(u, v);
+    //             pixel_color += ray_color(&ray, &world, max_depth);
+    //         }
+    //         //println!("{}", pixel_color);
+    //         // Apply gamma correction and write the pixel color
+    //         let scale = 1.0 / samples_per_pixel as f32;
+    //         let r = (pixel_color.x * scale).sqrt();
+    //         let g = (pixel_color.y * scale).sqrt();
+    //         let b = (pixel_color.z * scale).sqrt();
+
+    //         let ir = (255.99 * r.clamp(0.0, 0.999)) as u8;
+    //         let ig = (255.99 * g.clamp(0.0, 0.999)) as u8;
+    //         let ib = (255.99 * b.clamp(0.0, 0.999)) as u8;
+
+    //         img.put_pixel(i, image_height - 1 - j, Rgb([ir, ig, ib]));
+
+    //     }
+    // }
+    //let mut img = ImageBuffer::new(image_width, image_height);
+    //println!("built world");

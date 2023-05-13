@@ -3,7 +3,7 @@ use crate::{
     hitrecord::{HitRecord, Hitable},
     Ray,
 };
-use std::sync::Arc;
+
 
 use nalgebra::Point3;
 

@@ -15,11 +15,12 @@ lto = "fat"
 rpath = true
 target-cpu = "native"
 debug = true
+panic = "abort"
 
 [dependencies]
-nalgebra = "0.27.1"
-image = "0.23.14"
-rayon = "1.5.1"
+nalgebra = "0.32.2"
+image = "0.24.6"
+rayon = "1.7.0"
 rand = "0.8.5"
-simba = "0.8.1"
-packed_simd = "0.3.8"
+mimalloc = { version = "0.1.17", default-features = false }
+

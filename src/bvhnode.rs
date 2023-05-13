@@ -4,7 +4,7 @@ use std::sync::Arc;
 use rand::Rng;
 
 use crate::{
-    aabb::{self, box_x_compare, box_y_compare, box_z_compare, AABB},
+    aabb::{AABB},
     hitrecord::{HitRecord, Hitable},
     ray::Ray,
 };

@@ -3,16 +3,15 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use nalgebra::{Point3, Vector3};
+use nalgebra::{Vector3};
 use rand::Rng;
-use rayon::prelude::ParallelIterator;
+
 
 use crate::{
     aabb::AABB,
     bvhnode::BVHNode,
     hitrecord::{HitRecord, Hitable},
     kdnode::KdNode,
-    light::{self, Light},
     ray::Ray,
 };
 
@@ -162,7 +161,7 @@ pub fn ray_color(
     //memo.insert(*ray, color);
     let color = {
         let mut cache = background_cache.lock().unwrap();
-        let key = (
+        let _key = (
             (unit_direction.x * 1000.0) as i32,
             (unit_direction.y * 1000.0) as i32,
         );
@@ -193,7 +192,7 @@ impl Hitable for Vec<Arc<dyn Hitable>> {
 
         closest_hit
     }
-    fn bounding_box(&self, t0: f32, t1: f32) -> Option<AABB> {
+    fn bounding_box(&self, _t0: f32, _t1: f32) -> Option<AABB> {
         return None;
     }
 }

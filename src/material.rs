@@ -6,7 +6,7 @@ use crate::{
     util::{random_in_unit_sphere, random_unit_vector, reflect, refract, schlick},
     HitRecord,
 };
-use std::marker::{Send, Sync};
+
 
 #[derive(Clone)]
 

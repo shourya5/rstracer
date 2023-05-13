@@ -1,7 +1,7 @@
 use std::marker::{Send, Sync};
 // use std::simd::f32x16;
 use nalgebra::{Point3, Vector3};
-use std::sync::Arc;
+
 
 use crate::aabb::AABB;
 use crate::{material::Material, ray::Ray};

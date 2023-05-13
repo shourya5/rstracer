@@ -13,35 +13,6 @@ pub struct KdNode {
 }
 
 impl KdNode {
-    // pub fn new(objects: &mut [Arc<dyn Hitable>], depth: u32) -> Self {
-    //     let axis = depth % 3;
-    //     objects.sort_by(|a, b| {
-    //         let aabb_a = a.bounding_box(0.0, 0.0).unwrap();
-    //         let aabb_b = b.bounding_box(0.0, 0.0).unwrap();
-    //         aabb_a.min[axis.try_into().unwrap()].partial_cmp(&aabb_b.min[axis.try_into().unwrap()]).unwrap()
-    //     });
-
-    //     let middle = objects.len() / 2;
-    //     if objects.len() == 1 {
-    //         KdNode {
-    //             left: None,
-    //             right: None,
-    //             hitable: Some(objects[0].clone()),
-    //         }
-    //     } else if objects.len() == 2 {
-    //         KdNode {
-    //             left: Some(Box::new(KdNode::new(&mut objects[..middle], depth + 1))),
-    //             right: Some(Box::new(KdNode::new(&mut objects[middle..], depth + 1))),
-    //             hitable: None,
-    //         }
-    //     } else {
-    //         KdNode {
-    //             left: Some(Box::new(KdNode::new(&mut objects[..middle], depth + 1))),
-    //             right: Some(Box::new(KdNode::new(&mut objects[middle..], depth + 1))),
-    //             hitable: None,
-    //         }
-    //     }
-    // }
     pub fn new(objects: &mut [Arc<dyn Hitable>], depth: u32) -> Self {
         let axis = depth % 3;
         objects.sort_by(|a, b| {
@@ -92,6 +63,16 @@ impl KdNode {
 
         node
     }
+    fn potential_split_positions(objects: &[Arc<dyn Hitable>], axis: usize) -> Vec<f32> {
+        let mut positions = Vec::new();
+        for object in objects {
+            if let Some(bbox) = object.bounding_box(0.0, 0.0) {
+                positions.push(bbox.centroid()[axis]);
+            }
+        }
+        positions
+    }
+
     // pub fn new(objects: &mut [Arc<dyn Hitable>], depth: u32) -> Self {
     //     let axis = depth % 3;
 
@@ -141,6 +122,37 @@ impl KdNode {
         let mut objects = objects;
         KdNode::new(&mut objects, 0)
     }
+    fn split_sah(objects: &[Arc<dyn Hitable>], axis: usize, pos: f32) -> f32 {
+        let mut left_bbox = None;
+        let mut right_bbox = None;
+        let mut left_count = 0;
+        let mut right_count = 0;
+    
+        for object in objects {
+            if let Some(bbox) = object.bounding_box(0.0, 0.0) {
+                if bbox.centroid()[axis] <= pos {
+                    left_bbox = Some(match left_bbox {
+                        Some(existing) => surrounding_box(&existing, &bbox),
+                        None => bbox,
+                    });
+                    left_count += 1;
+                } else {
+                    right_bbox = Some(match right_bbox {
+                        Some(existing) => surrounding_box(&existing, &bbox),
+                        None => bbox,
+                    });
+                    right_count += 1;
+                }
+            }
+        }
+    
+        let left_area = left_bbox.map_or(0.0, |b| b.surface_area());
+        let right_area = right_bbox.map_or(0.0, |b| b.surface_area());
+    
+        let total_area = left_area + right_area;
+    
+        (left_count as f32 * left_area + right_count as f32 * right_area) / total_area
+    }
 }
 
 impl Hitable for KdNode {
@@ -169,35 +181,6 @@ impl Hitable for KdNode {
     fn bounding_box(&self, _t0: f32, _t1: f32) -> Option<AABB> {
         unimplemented!();
     }
+    
 }
-fn split_sah(objects: &[Arc<dyn Hitable>], axis: usize, pos: f32) -> f32 {
-    let mut left_bbox = None;
-    let mut right_bbox = None;
-    let mut left_count = 0;
-    let mut right_count = 0;
 
-    for object in objects {
-        if let Some(bbox) = object.bounding_box(0.0, 0.0) {
-            if bbox.centroid()[axis] <= pos {
-                left_bbox = Some(match left_bbox {
-                    Some(existing) => surrounding_box(&existing, &bbox),
-                    None => bbox,
-                });
-                left_count += 1;
-            } else {
-                right_bbox = Some(match right_bbox {
-                    Some(existing) => surrounding_box(&existing, &bbox),
-                    None => bbox,
-                });
-                right_count += 1;
-            }
-        }
-    }
-
-    let left_area = left_bbox.map_or(0.0, |b| b.surface_area());
-    let right_area = right_bbox.map_or(0.0, |b| b.surface_area());
-
-    let total_area = left_area + right_area;
-
-    (left_count as f32 * left_area + right_count as f32 * right_area) / total_area
-}
