@@ -1,30 +1,42 @@
-use nalgebra::{Unit, Vector3};
+use std::sync::Arc;
+
+use nalgebra::{Point3, Unit, Vector3};
 use rand::Rng;
 
 use crate::{
+    light::Light,
     ray::Ray,
+    texture::Texture,
     util::{random_in_unit_sphere, random_unit_vector, reflect, refract, schlick},
     HitRecord,
 };
 
-
 #[derive(Clone)]
 
 pub enum Material {
-    Lambertian { albedo: Vector3<f32> },
+    Lambertian { albedo: Arc<dyn Texture> },
     Metal { albedo: Vector3<f32>, fuzz: f32 },
     Dielectric { ref_idx: f32 },
 }
 impl Material {
-    pub fn scatter(&self, ray_in: &Ray, hit_record: &HitRecord) -> Option<(Vector3<f32>, Ray)> {
+    pub fn scatter(
+        &self,
+        ray_in: &Ray,
+        hit_record: &HitRecord,
+        center: &Point3<f32>,
+        light: &Light,
+    ) -> Option<(Vector3<f32>, Ray)> {
         match self {
             Material::Lambertian { albedo } => {
                 let scatter_direction = &hit_record.normal + random_unit_vector(hit_record.normal);
                 let scattered = Ray::new(hit_record.p, scatter_direction);
                 //Some((self.albedo, scattered))
                 if scattered.direction.dot(&hit_record.normal) > 0.0 {
-                    let light_dir = Unit::new_normalize(Vector3::new(1.0, 1.0, 1.0)); // example light direction
-                    let color = blinn_phong_lamb(*albedo, ray_in, hit_record, &light_dir);
+                    let l_vector = -(light.source - center);
+                    //dbg!(l_vector);
+                    let light_dir = Unit::new_normalize(l_vector); // example light direction
+                    let texture_color = albedo.value(hit_record.u, hit_record.v, &hit_record.p);
+                    let color = blinn_phong_lamb(texture_color, ray_in, hit_record, &light_dir);
                     Some((color, scattered))
                 } else {
                     None
@@ -34,7 +46,9 @@ impl Material {
                 let reflected = reflect(ray_in.direction.normalize(), hit_record.normal);
                 let scattered = Ray::new(hit_record.p, reflected + *fuzz * random_in_unit_sphere());
                 if scattered.direction.dot(&hit_record.normal) > 0.0 {
-                    let light_dir = Unit::new_normalize(Vector3::new(1.0, 1.0, 1.0)); // example light direction
+                    let l_vector = -Vector3::from(light.source - center);
+                    //dbg!(l_vector);
+                    let light_dir = Unit::new_normalize(l_vector); // example light direction
                     let color = blinn_phong_metal(*albedo, ray_in, hit_record, &light_dir);
                     return Some((color, scattered));
                 } else {
@@ -44,7 +58,9 @@ impl Material {
             Material::Dielectric { ref_idx } => {
                 let reflected = reflect(ray_in.direction, hit_record.normal);
                 let view_direction = -ray_in.direction.normalize();
-                let light_direction = Vector3::new(1.0, 1.0, 1.0).normalize();
+                let l_vector = -Vector3::from(light.source - center);
+                //dbg!(l_vector);
+                let light_direction = l_vector.normalize();
                 let light_color = Vector3::new(1.0, 1.0, 1.0);
                 let half_vector = (view_direction + light_direction).normalize();
                 let specular_intensity = hit_record.normal.dot(&half_vector).max(0.0).powf(90.0);

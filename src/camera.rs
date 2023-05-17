@@ -3,6 +3,17 @@ use crate::{ray::Ray, util::random_in_unit_disk};
 use nalgebra::{Point3, Vector3};
 
 #[derive(Copy, Clone, Debug)]
+/*  Y      Z
+    |     /
+    |    /
+    |   / 
+    |  / 
+    | / 
+    |/____________X
+ */
+
+///The axis in camera is borked,(atleast in move_camera),yeah I know...
+///  Switch the Y and X axis
 pub struct Camera {
     origin: Point3<f32>,
     lower_left_corner: Point3<f32>,
@@ -51,5 +62,9 @@ impl Camera {
         let direction =
             self.lower_left_corner + u * self.horizontal + v * self.vertical - self.origin - offset;
         Ray::new(self.origin + offset, direction)
+    }
+    pub fn move_camera(&mut self, displacement: Vector3<f32>) {
+        self.origin += displacement;
+        self.lower_left_corner += displacement;
     }
 }

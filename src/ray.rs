@@ -1,6 +1,6 @@
 use nalgebra::{Point3, Vector3};
 
-//#[derive(Clone)]
+#[derive(Clone)]
 
 pub struct Ray {
     pub origin: Point3<f32>,
@@ -15,4 +15,5 @@ impl Ray {
     pub fn point_at_parameter(&self, t: f32) -> Point3<f32> {
         return self.origin + (self.direction * t);
     }
+    //TODO add a face at normal function that inverts the normals(outside the )
 }

@@ -1,10 +1,11 @@
 use std::cmp::Ordering;
 use std::sync::Arc;
 
+use nalgebra::Point3;
 use rand::Rng;
 
 use crate::{
-    aabb::{AABB},
+    aabb::AABB,
     hitrecord::{HitRecord, Hitable},
     ray::Ray,
 };
@@ -163,6 +164,9 @@ impl Hitable for BVHNode {
 
     fn bounding_box(&self, _t0: f32, _t1: f32) -> Option<AABB> {
         Some(self.aabb)
+    }
+    fn centre(&self) -> Point3<f32> {
+        unimplemented!()
     }
 }
 fn box_compare(

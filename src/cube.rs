@@ -4,7 +4,6 @@ use crate::{
     Ray,
 };
 
-
 use nalgebra::{Point3, Vector3};
 
 use crate::material::Material;
@@ -42,10 +41,16 @@ impl Hitable for Cube {
                         let mut normal = Vector3::zeros();
                         normal[dim] =
                             (edge - self.min[dim]) * 2.0 / (self.max[dim] - self.min[dim]) - 1.0;
+                        let u = (p[other_dimensions[0]] - self.min[other_dimensions[0]])
+                            / (self.max[other_dimensions[0]] - self.min[other_dimensions[0]]);
+                        let v = (p[other_dimensions[1]] - self.min[other_dimensions[1]])
+                            / (self.max[other_dimensions[1]] - self.min[other_dimensions[1]]);
                         hit_record = Some(HitRecord {
                             t,
                             p,
                             normal,
+                            u,
+                            v,
                             material: (&self.material),
                         });
                     }
@@ -58,5 +63,8 @@ impl Hitable for Cube {
 
     fn bounding_box(&self, _t0: f32, _t1: f32) -> Option<AABB> {
         Some(AABB::new(self.min, self.max))
+    }
+    fn centre(&self) -> Point3<f32> {
+        Point3::from((self.min.coords + self.max.coords) * 0.5)
     }
 }

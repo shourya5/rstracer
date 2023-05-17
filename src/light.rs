@@ -1,24 +1,15 @@
 use nalgebra::Point3;
 
+#[derive(Clone, Copy)]
 pub struct Light {
-    source: Point3<f32>,
-    radius: f32,
+    pub source: Point3<f32>,
+    pub radius: f32,
 }
 
 impl Light {
     // Constructor to create a new Light instance
     pub fn new(source: Point3<f32>, radius: f32) -> Self {
         Light { source, radius }
-    }
-
-    // Getter method for the source position
-    pub fn source(&self) -> Point3<f32> {
-        self.source
-    }
-
-    // Getter method for the radius
-    pub fn radius(&self) -> f32 {
-        self.radius
     }
 
     // Method to update the source position

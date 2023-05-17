@@ -4,7 +4,6 @@ use crate::{
     Ray,
 };
 
-
 use nalgebra::{Point3, Vector3};
 
 use crate::material::Material;
@@ -38,19 +37,29 @@ impl Hitable for Sphere {
             if t < t_max && t > t_min {
                 let p = ray.point_at_parameter(t);
                 let normal = (p - self.center) / self.radius;
+                let p_shifted = p - self.center;
+                let u = 0.5 + (p_shifted.y.atan2(p_shifted.x)) / (2.0 * std::f32::consts::PI);
+                let v = 0.5 - (p_shifted.z.asin()) / std::f32::consts::PI;
+
                 return Some(HitRecord {
                     t,
                     p,
                     normal,
+                    u,
+                    v,
                     material: &self.material,
                 });
             }
         }
         None
     }
+
     fn bounding_box(&self, _t0: f32, _t1: f32) -> Option<AABB> {
         let min = self.center - Vector3::new(self.radius, self.radius, self.radius);
         let max = self.center + Vector3::new(self.radius, self.radius, self.radius);
         Some(AABB::new(min, max))
+    }
+    fn centre(&self) -> Point3<f32> {
+        return self.center;
     }
 }

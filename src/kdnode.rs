@@ -1,3 +1,5 @@
+use nalgebra::Point3;
+
 use crate::{
     aabb::{surrounding_box, AABB},
     HitRecord, Hitable, Ray,
@@ -5,13 +7,28 @@ use crate::{
 
 use std::sync::Arc;
 
+/*
+        KdNode
+        /   \
+       /     \
+      /       \
+    KdNode    KdNode
+*/
+
+
+///Note: KdNode is wrapped in an option for null values \n
+///Also,KdNode is wrapped in box to function as a pointer,don't think Arc<_> is necessary
+ 
 pub struct KdNode {
-    left: Option<Box<KdNode>>,
+    left: Option<Box<KdNode>>, 
     right: Option<Box<KdNode>>,
     hitable: Option<Arc<dyn Hitable>>,
     pub bounding_box: Option<AABB>,
 }
-
+/*
+ TODO: check if the hittable construct needs Arc,might introduce overhead
+ Also,can bounding box be null?
+ */
 impl KdNode {
     pub fn new(objects: &mut [Arc<dyn Hitable>], depth: u32) -> Self {
         let axis = depth % 3;
@@ -127,7 +144,7 @@ impl KdNode {
         let mut right_bbox = None;
         let mut left_count = 0;
         let mut right_count = 0;
-    
+
         for object in objects {
             if let Some(bbox) = object.bounding_box(0.0, 0.0) {
                 if bbox.centroid()[axis] <= pos {
@@ -145,12 +162,12 @@ impl KdNode {
                 }
             }
         }
-    
+
         let left_area = left_bbox.map_or(0.0, |b| b.surface_area());
         let right_area = right_bbox.map_or(0.0, |b| b.surface_area());
-    
+
         let total_area = left_area + right_area;
-    
+
         (left_count as f32 * left_area + right_count as f32 * right_area) / total_area
     }
 }
@@ -179,8 +196,13 @@ impl Hitable for KdNode {
     }
 
     fn bounding_box(&self, _t0: f32, _t1: f32) -> Option<AABB> {
-        unimplemented!();
+        self.bounding_box.clone()
     }
-    
-}
 
+    fn centre(&self) -> Point3<f32> {
+        match &self.hitable {
+            Some(hitable) => hitable.centre(),
+            None => Point3::new(1.0, 1.0, 1.0), // Return a default point (1,1,1) when hitable is None
+        }
+    }
+}
